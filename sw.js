@@ -1,4 +1,4 @@
-const CACHE = 'financeflow-v5';
+const CACHE = 'financeflow-v6';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 const CDN_ASSETS = ['https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'];
 

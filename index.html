@@ -266,6 +266,56 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
     </div>
   </div>
 
+  <div id="viewBtg" style="display:none">
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon" style="background:var(--orange-bg)">🏦</div>
+        <div class="card-label">Investido (R$)</div>
+        <div class="card-value" id="btgTotal">R$ 0,00</div>
+        <div class="card-sub">na BTG</div>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:var(--purple-bg)">📦</div>
+        <div class="card-label">Carteira</div>
+        <div class="card-value" id="btgAssetCount" style="font-size:18px">0 ativos</div>
+        <div class="card-sub" id="btgOpCount">0 operações</div>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:var(--green-bg)">🎯</div>
+        <div class="card-label">Na Meta</div>
+        <div class="card-value income" id="btgGoalShare" style="font-size:18px">—</div>
+        <div class="card-sub">do patrimônio necessário</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        <div class="section">
+          <div class="section-title">Carteira (Posições)</div>
+          <div class="panel" id="btgPositions" style="padding:0"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Operações</div>
+          <div class="list-scroll" id="btgList"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section">
+          <div class="section-title">Alocação por Ativo</div>
+          <div class="panel">
+            <div class="chart-wrap">
+              <canvas id="btgChart"></canvas>
+              <div class="no-chart" id="btgNoChart" style="display:block">Adicione operações para ver o gráfico</div>
+            </div>
+            <div class="legend" id="btgLegend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="viewNomad" style="display:none">
     <div class="cards-grid">
       <div class="card">
@@ -385,10 +435,10 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
             <span class="goal-breakdown-value" id="goalBreakContribution">—</span>
           </div>
           <div class="goal-breakdown-row">
-            <span class="goal-breakdown-label">Investido hoje (Brasil + Nomad)</span>
+            <span class="goal-breakdown-label">Investido hoje (BTG + Nomad)</span>
             <span class="goal-breakdown-value" id="goalBreakCurrent">—</span>
           </div>
-          <div class="goal-note">Toque em <strong>+</strong> a qualquer momento para ajustar sua meta, aporte mensal, patrimônio no Brasil ou cotação do euro. O cálculo assume reinvestimento total dos rendimentos até a meta ser atingida, somando o que está investido na aba Nomad (convertido em reais) ao patrimônio informado no Brasil.</div>
+          <div class="goal-note">Toque em <strong>+</strong> a qualquer momento para ajustar sua meta, aporte mensal ou cotação do euro. O cálculo assume reinvestimento total dos rendimentos até a meta ser atingida, somando automaticamente o que está investido na BTG e na Nomad (convertido em reais pela cotação do dólar).</div>
         </div>
       </div>
     </div>
@@ -398,6 +448,9 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 <div class="tabbar">
   <button class="tabbar-btn active" id="tabGeralBtn" onclick="switchTab('geral')">
     <span class="tabbar-icon">💰</span><span>Geral</span>
+  </button>
+  <button class="tabbar-btn" id="tabBtgBtn" onclick="switchTab('btg')">
+    <span class="tabbar-icon">🏦</span><span>BTG</span>
   </button>
   <button class="tabbar-btn" id="tabNomadBtn" onclick="switchTab('nomad')">
     <span class="tabbar-icon">🌎</span><span>Nomad</span>
@@ -452,6 +505,40 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
     </div>
   </div>
   <button class="btn-add" onclick="addTransaction()">Adicionar Transação</button>
+</div>
+
+<div class="sheet" id="sheetBtg">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">Nova Operação BTG</span>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Tipo</label>
+      <div class="type-toggle">
+        <button class="type-btn income-btn active" id="btgAporteBtn" onclick="setBtgType('aporte')">📈 Aporte</button>
+        <button class="type-btn expense-btn" id="btgResgateBtn" onclick="setBtgType('resgate')">📉 Resgate</button>
+      </div>
+    </div>
+    <div class="form-group full">
+      <label>Ativo</label>
+      <input type="text" id="btgTicker" placeholder="Ex: Tesouro Selic, CDB, PETR4..." onkeydown="if(event.key==='Enter')addBtg()">
+    </div>
+    <div class="form-group">
+      <label>Quantidade</label>
+      <input type="number" id="btgQty" placeholder="1" min="0" step="0.000001" inputmode="decimal" onkeydown="if(event.key==='Enter')addBtg()">
+    </div>
+    <div class="form-group">
+      <label>Valor Unitário (R$)</label>
+      <input type="number" id="btgPrice" placeholder="0,00" min="0" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')addBtg()">
+    </div>
+    <div class="form-group full">
+      <label>Data</label>
+      <input type="date" id="btgDate">
+    </div>
+  </div>
+  <button class="btn-add" onclick="addBtg()">Registrar Operação</button>
 </div>
 
 <div class="sheet" id="sheetNomad">
@@ -516,14 +603,11 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
       <input type="number" id="goalContribution" placeholder="1000" min="0" step="1" inputmode="decimal">
     </div>
     <div class="form-group full">
-      <label>Patrimônio investido no Brasil (R$)</label>
-      <input type="number" id="goalBrCapital" placeholder="0,00" min="0" step="0.01" inputmode="decimal">
-    </div>
-    <div class="form-group full">
       <label>Cotação do Euro (R$) — opcional, para referência da mudança</label>
       <input type="number" id="goalEurRate" placeholder="5,85" min="0" step="0.01" inputmode="decimal">
     </div>
   </div>
+  <div class="goal-note" style="margin-top:0;padding-top:0;border-top:none">O patrimônio investido no Brasil (BTG) e na Nomad é somado automaticamente — sem precisar digitar aqui.</div>
   <button class="btn-add" onclick="saveGoal()">Salvar Meta</button>
 </div>
 
@@ -558,6 +642,10 @@ let nomadType = 'buy';
 let nomadChart = null;
 let activeTab = localStorage.getItem('ff_tab') || 'geral';
 
+let btgEntries = JSON.parse(localStorage.getItem('ff_btg') || '[]');
+let btgType = 'aporte';
+let btgChart = null;
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -576,7 +664,7 @@ function getToday() {
 }
 
 function openSheet(name) {
-  const map = { nomad: 'sheetNomad', menu: 'sheetMenu', metas: 'sheetMetas' };
+  const map = { btg: 'sheetBtg', nomad: 'sheetNomad', menu: 'sheetMenu', metas: 'sheetMetas' };
   const id = map[name] || 'sheetGeral';
   if (id === 'sheetMetas') fillGoalForm();
   document.getElementById('sheetOverlay').classList.add('show');
@@ -585,7 +673,7 @@ function openSheet(name) {
 
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
-  ['sheetGeral', 'sheetNomad', 'sheetMenu', 'sheetMetas'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['sheetGeral', 'sheetBtg', 'sheetNomad', 'sheetMenu', 'sheetMetas'].forEach(id => document.getElementById(id).classList.remove('show'));
 }
 
 function addTransaction() {
@@ -776,12 +864,16 @@ function switchTab(tab) {
   activeTab = tab;
   localStorage.setItem('ff_tab', tab);
   document.getElementById('viewGeral').style.display = tab === 'geral' ? '' : 'none';
+  document.getElementById('viewBtg').style.display = tab === 'btg' ? '' : 'none';
   document.getElementById('viewNomad').style.display = tab === 'nomad' ? '' : 'none';
   document.getElementById('viewMetas').style.display = tab === 'metas' ? '' : 'none';
   document.getElementById('tabGeralBtn').classList.toggle('active', tab === 'geral');
+  document.getElementById('tabBtgBtn').classList.toggle('active', tab === 'btg');
   document.getElementById('tabNomadBtn').classList.toggle('active', tab === 'nomad');
   document.getElementById('tabMetasBtn').classList.toggle('active', tab === 'metas');
-  document.getElementById('navTitle').textContent = tab === 'nomad' ? 'Nomad Internacional' : tab === 'metas' ? 'Metas Financeiras' : 'Geral';
+  const titles = { btg: 'BTG Investimentos', nomad: 'Nomad Internacional', metas: 'Metas Financeiras' };
+  document.getElementById('navTitle').textContent = titles[tab] || 'Geral';
+  if (tab === 'btg') renderBtg();
   if (tab === 'nomad') renderNomad();
   if (tab === 'metas') renderGoal();
 }
@@ -961,6 +1053,175 @@ function renderNomad() {
   renderNomadList();
 }
 
+/* ===== BTG (Brazilian investments) ===== */
+function setBtgType(t) {
+  btgType = t;
+  document.getElementById('btgAporteBtn').classList.toggle('active', t === 'aporte');
+  document.getElementById('btgResgateBtn').classList.toggle('active', t === 'resgate');
+}
+
+function saveBtg() {
+  localStorage.setItem('ff_btg', JSON.stringify(btgEntries));
+}
+
+function addBtg() {
+  const ticker = document.getElementById('btgTicker').value.trim();
+  const qty = parseFloat(document.getElementById('btgQty').value);
+  const price = parseFloat(document.getElementById('btgPrice').value);
+  const date = document.getElementById('btgDate').value || getToday();
+  if (!ticker) { showToast('⚠️ Informe o ativo.'); return; }
+  if (!qty || qty <= 0) { showToast('⚠️ Informe uma quantidade válida.'); return; }
+  if (!price || price <= 0) { showToast('⚠️ Informe um valor válido.'); return; }
+  const entry = { id: Date.now(), ticker, type: btgType, qty, price, date };
+  btgEntries.unshift(entry);
+  saveBtg();
+  document.getElementById('btgTicker').value = '';
+  document.getElementById('btgQty').value = '';
+  document.getElementById('btgPrice').value = '';
+  document.getElementById('btgDate').value = getToday();
+  closeSheet();
+  showToast(btgType === 'aporte' ? '✅ Aporte registrado!' : '✅ Resgate registrado!');
+  renderBtg();
+}
+
+function removeBtg(id) {
+  const el = document.getElementById('btg-' + id);
+  if (el) {
+    el.classList.add('removing');
+    setTimeout(() => {
+      btgEntries = btgEntries.filter(e => e.id !== id);
+      saveBtg();
+      renderBtg();
+    }, 300);
+  }
+}
+
+function getBtgPositions() {
+  const map = {};
+  btgEntries.forEach(e => {
+    if (!map[e.ticker]) map[e.ticker] = { ticker: e.ticker, qty: 0, invested: 0 };
+    const sign = e.type === 'aporte' ? 1 : -1;
+    map[e.ticker].qty += sign * e.qty;
+    map[e.ticker].invested += sign * e.qty * e.price;
+  });
+  return Object.values(map).filter(p => Math.abs(p.qty) > 1e-9);
+}
+
+function renderBtgSummary() {
+  const positions = getBtgPositions();
+  const total = positions.reduce((s, p) => s + p.invested, 0);
+  document.getElementById('btgTotal').textContent = fmtBRL(total);
+  document.getElementById('btgAssetCount').textContent = positions.length + (positions.length === 1 ? ' ativo' : ' ativos');
+  document.getElementById('btgOpCount').textContent = btgEntries.length + (btgEntries.length === 1 ? ' operação' : ' operações');
+  const shareEl = document.getElementById('btgGoalShare');
+  if (goal && goal.monthlyIncomeTarget > 0 && goal.annualRate > 0) {
+    const required = (goal.monthlyIncomeTarget * 12) / (goal.annualRate / 100);
+    shareEl.textContent = (Math.min(100, (total / required) * 100)).toFixed(1) + '%';
+  } else {
+    shareEl.textContent = '—';
+  }
+}
+
+function renderBtgPositions() {
+  const positions = getBtgPositions().sort((a, b) => b.invested - a.invested);
+  const el = document.getElementById('btgPositions');
+  if (!positions.length) {
+    el.style.padding = '0';
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🏦</div><div>Nenhuma posição na carteira</div></div>`;
+    return;
+  }
+  el.style.padding = '0';
+  el.innerHTML = positions.map(p => {
+    const avg = p.invested / p.qty;
+    return `<div class="list-row">
+      <div style="flex:1;min-width:0">
+        <div class="pos-ticker">${escapeHtml(p.ticker)}</div>
+        <div class="pos-detail">${p.qty.toLocaleString('pt-BR', { maximumFractionDigits: 6 })}× · valor médio ${fmtBRL(avg)}</div>
+      </div>
+      <div class="pos-value">${fmtBRL(p.invested)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBtgChart() {
+  const positions = getBtgPositions();
+  const noChart = document.getElementById('btgNoChart');
+  const canvas = document.getElementById('btgChart');
+  if (!positions.length) {
+    noChart.style.display = 'block';
+    noChart.textContent = 'Adicione operações para ver o gráfico';
+    canvas.style.display = 'none';
+    if (btgChart) { btgChart.destroy(); btgChart = null; }
+    document.getElementById('btgLegend').innerHTML = '';
+    return;
+  }
+  const palette = ['#ff9500', '#007aff', '#af52de', '#34c759', '#ff3b30', '#00b4c7', '#00a389', '#ff2d92', '#8e8e93', '#ffcc00'];
+  const labels = positions.map(p => p.ticker);
+  const data = positions.map(p => Math.max(p.invested, 0));
+  const colors = positions.map((_, i) => palette[i % palette.length]);
+  if (typeof Chart === 'undefined') {
+    noChart.style.display = 'block';
+    noChart.textContent = 'Gráfico indisponível offline';
+    canvas.style.display = 'none';
+    document.getElementById('btgLegend').innerHTML = positions.map((p, i) =>
+      `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div><span>${escapeHtml(p.ticker)}: ${fmtBRL(p.invested)}</span></div>`
+    ).join('');
+    return;
+  }
+  noChart.style.display = 'none';
+  canvas.style.display = 'block';
+  if (btgChart) btgChart.destroy();
+  btgChart = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtBRL(ctx.raw) + ' (' + ((ctx.raw / data.reduce((a, b) => a + b, 0)) * 100).toFixed(1) + '%)' } }
+      }
+    }
+  });
+  document.getElementById('btgLegend').innerHTML = positions.map((p, i) =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div><span>${escapeHtml(p.ticker)}</span></div>`
+  ).join('');
+}
+
+function renderBtgList() {
+  const list = [...btgEntries].sort((a, b) => b.date.localeCompare(a.date));
+  const el = document.getElementById('btgList');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🏦</div><div>Nenhuma operação registrada</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(e => {
+    const sign = e.type === 'aporte' ? '+' : '-';
+    const dateStr = e.date ? new Date(e.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const total = e.qty * e.price;
+    return `<div class="swipe-row" id="btg-${e.id}">
+      <div class="swipe-actions"><button class="swipe-delete" onclick="removeBtg(${e.id})" aria-label="Excluir">🗑️</button></div>
+      <div class="swipe-content">
+        <div class="tx-icon" style="background:${e.type === 'aporte' ? 'var(--green-bg)' : 'var(--red-bg)'};color:${e.type === 'aporte' ? 'var(--green)' : 'var(--red)'}">${e.type === 'aporte' ? '📈' : '📉'}</div>
+        <div class="tx-info">
+          <div class="tx-desc">${escapeHtml(e.ticker)} · ${e.qty.toLocaleString('pt-BR', { maximumFractionDigits: 6 })}×</div>
+          <div class="tx-meta">${dateStr} · ${fmtBRL(e.price)}/un</div>
+        </div>
+        <span class="tx-amount ${e.type === 'aporte' ? 'income' : 'expense'}">${sign} ${fmtBRL(total)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  attachSwipe(el);
+}
+
+function renderBtg() {
+  renderBtgSummary();
+  renderBtgPositions();
+  renderBtgChart();
+  renderBtgList();
+}
+
 /* ===== Metas (financial goals) ===== */
 let goal = JSON.parse(localStorage.getItem('ff_goal') || 'null');
 let goalChart = null;
@@ -971,7 +1232,6 @@ function fillGoalForm() {
   document.getElementById('goalIncome').value = g.monthlyIncomeTarget || 8000;
   document.getElementById('goalRate').value = g.annualRate || 6;
   document.getElementById('goalContribution').value = g.monthlyContribution || '';
-  document.getElementById('goalBrCapital').value = g.brCapital || '';
   document.getElementById('goalEurRate').value = g.eurRate || '';
 }
 
@@ -980,15 +1240,15 @@ function saveGoal() {
   const monthlyIncomeTarget = parseFloat(document.getElementById('goalIncome').value);
   const annualRate = parseFloat(document.getElementById('goalRate').value);
   const monthlyContribution = parseFloat(document.getElementById('goalContribution').value) || 0;
-  const brCapital = parseFloat(document.getElementById('goalBrCapital').value) || 0;
   const eurRate = parseFloat(document.getElementById('goalEurRate').value) || 0;
   if (!monthlyIncomeTarget || monthlyIncomeTarget <= 0) { showToast('⚠️ Informe a renda mensal desejada.'); return; }
   if (!annualRate || annualRate <= 0) { showToast('⚠️ Informe a rentabilidade anual esperada.'); return; }
-  goal = { name, monthlyIncomeTarget, annualRate, monthlyContribution, brCapital, eurRate };
+  goal = { name, monthlyIncomeTarget, annualRate, monthlyContribution, eurRate };
   localStorage.setItem('ff_goal', JSON.stringify(goal));
   closeSheet();
   showToast('🎯 Meta salva com sucesso!');
   renderGoal();
+  renderBtgSummary();
 }
 
 function calcMonthsToGoal(P, A, annualRatePct, FV) {
@@ -1012,9 +1272,15 @@ function projectCapital(P, A, annualRatePct, months) {
 function getGoalCurrentCapital() {
   const nomadUsd = getNomadPositions().reduce((s, p) => s + p.invested, 0);
   const nomadBrl = nomadUsd * usdRate;
-  const brCapital = (goal && goal.brCapital) || 0;
-  const totalBrl = nomadBrl + brCapital;
-  return { nomadUsd, nomadBrl, brCapital, totalBrl };
+  const btgTotal = getBtgPositions().reduce((s, p) => s + p.invested, 0);
+  const totalBrl = nomadBrl + btgTotal;
+  return { nomadUsd, nomadBrl, btgTotal, totalBrl };
+}
+
+function currencyNote(brlValue) {
+  const usd = '≈ ' + fmtUSD(brlValue / usdRate);
+  const eur = goal && goal.eurRate > 0 ? ' / ' + fmtEUR(brlValue / goal.eurRate) : '';
+  return usd + eur;
 }
 
 function renderGoal() {
@@ -1034,19 +1300,19 @@ function renderGoal() {
   const current = getGoalCurrentCapital();
   const remaining = Math.max(0, required - current.totalBrl);
   const percent = Math.min(100, (current.totalBrl / required) * 100);
-  const eurNote = goal.eurRate > 0 ? ' (≈ ' + fmtEUR(required / goal.eurRate) + ')' : '';
 
   document.getElementById('goalRequired').textContent = fmtBRL(required);
   document.getElementById('goalCurrent').textContent = fmtBRL(current.totalBrl);
   document.getElementById('goalPercent').textContent = percent.toFixed(1) + '%';
   document.getElementById('goalRemaining').textContent = percent >= 100 ? 'meta atingida' : fmtBRL(remaining) + ' restantes';
   document.getElementById('goalProgressBar').style.width = percent + '%';
-  document.getElementById('goalRequiredSub').textContent = 'para a renda desejada' + eurNote;
+  document.getElementById('goalRequiredSub').textContent = currencyNote(required);
+  document.getElementById('goalCurrentSub').textContent = currencyNote(current.totalBrl);
 
   document.getElementById('goalBreakIncome').textContent = fmtBRL(goal.monthlyIncomeTarget) + '/mês';
   document.getElementById('goalBreakRate').textContent = goal.annualRate.toLocaleString('pt-BR') + '% a.a.';
   document.getElementById('goalBreakContribution').textContent = goal.monthlyContribution > 0 ? fmtBRL(goal.monthlyContribution) + '/mês' : 'não informado';
-  document.getElementById('goalBreakCurrent').textContent = fmtBRL(current.totalBrl) + ' = ' + fmtBRL(current.brCapital) + ' (Brasil) + ' + fmtBRL(current.nomadBrl) + ' (Nomad)';
+  document.getElementById('goalBreakCurrent').textContent = fmtBRL(current.totalBrl) + ' = ' + fmtBRL(current.btgTotal) + ' (BTG) + ' + fmtBRL(current.nomadBrl) + ' (Nomad)';
 
   const months = calcMonthsToGoal(current.totalBrl, goal.monthlyContribution, goal.annualRate, required);
   const etaEl = document.getElementById('goalEta');
@@ -1216,6 +1482,7 @@ renderAll();
 
 document.getElementById('nomadDate').value = getToday();
 document.getElementById('usdRate').value = usdRate;
+document.getElementById('btgDate').value = getToday();
 switchTab(activeTab);
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
