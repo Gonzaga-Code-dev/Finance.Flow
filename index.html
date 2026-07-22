@@ -67,6 +67,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* ===== Sections & generic panel ===== */
 .section{margin-bottom:22px}
 .section-title{font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px;padding:0 2px}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin-bottom:8px}
+.section-header .section-title{margin-bottom:0;padding:0}
+.icon-btn.small{width:30px;height:30px;font-size:15px}
 .panel{background:var(--surface);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
 
 /* ===== Filters ===== */
@@ -270,6 +273,12 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   <div id="viewBtg" style="display:none">
     <div class="cards-grid">
       <div class="card">
+        <div class="card-icon" style="background:var(--blue-bg)">💰</div>
+        <div class="card-label">Saldo em Conta</div>
+        <div class="card-value" id="btgCashTotal">R$ 0,00</div>
+        <div class="card-sub">sem investir</div>
+      </div>
+      <div class="card">
         <div class="card-icon" style="background:var(--orange-bg)">🏦</div>
         <div class="card-label">Investido (R$)</div>
         <div class="card-value" id="btgTotal">R$ 0,00</div>
@@ -291,6 +300,14 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 
     <div class="main-grid">
       <div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Saldo em Conta</div>
+            <button class="icon-btn small" onclick="openSheet('btgCash')" aria-label="Adicionar movimento">+</button>
+          </div>
+          <div class="list-scroll" id="btgCashList" style="max-height:260px"></div>
+        </div>
+
         <div class="section">
           <div class="section-title">Carteira (Posições)</div>
           <div class="panel" id="btgPositions" style="padding:0"></div>
@@ -320,6 +337,12 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   <div id="viewNomad" style="display:none">
     <div class="cards-grid">
       <div class="card">
+        <div class="card-icon" style="background:var(--blue-bg)">💶</div>
+        <div class="card-label">Saldo em Conta</div>
+        <div class="card-value" id="nomadCashTotal">€ 0,00</div>
+        <div class="card-sub">sem investir</div>
+      </div>
+      <div class="card">
         <div class="card-icon">💵</div>
         <div class="card-label">Investido (US$)</div>
         <div class="card-value" id="nomadTotalUsd">US$ 0,00</div>
@@ -347,6 +370,14 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 
     <div class="main-grid">
       <div>
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Saldo em Conta</div>
+            <button class="icon-btn small" onclick="openSheet('nomadCash')" aria-label="Adicionar movimento">+</button>
+          </div>
+          <div class="list-scroll" id="nomadCashList" style="max-height:260px"></div>
+        </div>
+
         <div class="section">
           <div class="section-title">Carteira (Posições)</div>
           <div class="panel" id="nomadPositions" style="padding:0"></div>
@@ -584,6 +615,32 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   <button class="btn-add" onclick="addBtg()">Registrar Operação</button>
 </div>
 
+<div class="sheet" id="sheetBtgCash">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">Saldo em Conta (BTG)</span>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Tipo</label>
+      <div class="type-toggle">
+        <button class="type-btn income-btn active" id="btgCashDepositoBtn" onclick="setBtgCashType('deposito')">📈 Depósito</button>
+        <button class="type-btn expense-btn" id="btgCashSaqueBtn" onclick="setBtgCashType('saque')">📉 Saque</button>
+      </div>
+    </div>
+    <div class="form-group full">
+      <label>Valor (R$)</label>
+      <input type="number" id="btgCashAmount" placeholder="0,00" min="0" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')addBtgCash()">
+    </div>
+    <div class="form-group full">
+      <label>Data</label>
+      <input type="date" id="btgCashDate">
+    </div>
+  </div>
+  <button class="btn-add" onclick="addBtgCash()">Registrar Movimento</button>
+</div>
+
 <div class="sheet" id="sheetNomad">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
@@ -620,6 +677,32 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
     </div>
   </div>
   <button class="btn-add" onclick="addNomad()">Registrar Operação</button>
+</div>
+
+<div class="sheet" id="sheetNomadCash">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">Saldo em Conta (Nomad)</span>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Tipo</label>
+      <div class="type-toggle">
+        <button class="type-btn income-btn active" id="nomadCashDepositoBtn" onclick="setNomadCashType('deposito')">📈 Depósito</button>
+        <button class="type-btn expense-btn" id="nomadCashSaqueBtn" onclick="setNomadCashType('saque')">📉 Saque</button>
+      </div>
+    </div>
+    <div class="form-group full">
+      <label>Valor (€)</label>
+      <input type="number" id="nomadCashAmount" placeholder="0,00" min="0" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')addNomadCash()">
+    </div>
+    <div class="form-group full">
+      <label>Data</label>
+      <input type="date" id="nomadCashDate">
+    </div>
+  </div>
+  <button class="btn-add" onclick="addNomadCash()">Registrar Movimento</button>
 </div>
 
 <div class="sheet" id="sheetMetas">
@@ -701,10 +784,14 @@ let usdRate = parseFloat(localStorage.getItem('ff_usd_rate')) || 5.00;
 let nomadType = 'buy';
 let nomadChart = null;
 let activeTab = localStorage.getItem('ff_tab') || 'geral';
+let nomadCash = JSON.parse(localStorage.getItem('ff_nomad_cash') || '[]');
+let nomadCashType = 'deposito';
 
 let btgEntries = JSON.parse(localStorage.getItem('ff_btg') || '[]');
 let btgType = 'aporte';
 let btgChart = null;
+let btgCash = JSON.parse(localStorage.getItem('ff_btg_cash') || '[]');
+let btgCashType = 'deposito';
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -724,7 +811,7 @@ function getToday() {
 }
 
 function openSheet(name) {
-  const map = { btg: 'sheetBtg', nomad: 'sheetNomad', menu: 'sheetMenu', metas: 'sheetMetas' };
+  const map = { btg: 'sheetBtg', btgCash: 'sheetBtgCash', nomad: 'sheetNomad', nomadCash: 'sheetNomadCash', menu: 'sheetMenu', metas: 'sheetMetas' };
   const id = map[name] || 'sheetGeral';
   if (id === 'sheetMetas') fillGoalForm();
   document.getElementById('sheetOverlay').classList.add('show');
@@ -733,7 +820,7 @@ function openSheet(name) {
 
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
-  ['sheetGeral', 'sheetBtg', 'sheetNomad', 'sheetMenu', 'sheetMetas'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['sheetGeral', 'sheetBtg', 'sheetBtgCash', 'sheetNomad', 'sheetNomadCash', 'sheetMenu', 'sheetMetas'].forEach(id => document.getElementById(id).classList.remove('show'));
 }
 
 function addTransaction() {
@@ -1010,7 +1097,7 @@ function renderNomadSummary() {
   document.getElementById('nomadOpCount').textContent = nomadEntries.length + (nomadEntries.length === 1 ? ' operação' : ' operações');
   const shareEl = document.getElementById('nomadGoalShare');
   if (goal && goal.reserveTargetEur > 0 && goal.eurRate > 0) {
-    const eur = totalBrl / goal.eurRate;
+    const eur = totalBrl / goal.eurRate + getNomadCashBalance();
     shareEl.textContent = (Math.min(100, (eur / goal.reserveTargetEur) * 100)).toFixed(1) + '%';
   } else {
     shareEl.textContent = '—';
@@ -1118,6 +1205,7 @@ function renderNomad() {
   renderNomadPositions();
   renderNomadChart();
   renderNomadList();
+  renderNomadCashList();
 }
 
 /* ===== BTG (Brazilian investments) ===== */
@@ -1183,7 +1271,7 @@ function renderBtgSummary() {
   const shareEl = document.getElementById('btgGoalShare');
   if (goal && goal.monthlyIncomeTarget > 0 && goal.btgRate > 0) {
     const required = (goal.monthlyIncomeTarget * 12) / (goal.btgRate / 100);
-    shareEl.textContent = (Math.min(100, (total / required) * 100)).toFixed(1) + '%';
+    shareEl.textContent = (Math.min(100, ((total + getBtgCashBalance()) / required) * 100)).toFixed(1) + '%';
   } else {
     shareEl.textContent = '—';
   }
@@ -1282,11 +1370,144 @@ function renderBtgList() {
   attachSwipe(el);
 }
 
+function setBtgCashType(t) {
+  btgCashType = t;
+  document.getElementById('btgCashDepositoBtn').classList.toggle('active', t === 'deposito');
+  document.getElementById('btgCashSaqueBtn').classList.toggle('active', t === 'saque');
+}
+
+function saveBtgCashList() {
+  localStorage.setItem('ff_btg_cash', JSON.stringify(btgCash));
+}
+
+function addBtgCash() {
+  const amount = parseFloat(document.getElementById('btgCashAmount').value);
+  const date = document.getElementById('btgCashDate').value || getToday();
+  if (!amount || amount <= 0) { showToast('⚠️ Informe um valor válido.'); return; }
+  const entry = { id: Date.now(), type: btgCashType, amount, date };
+  btgCash.unshift(entry);
+  saveBtgCashList();
+  document.getElementById('btgCashAmount').value = '';
+  document.getElementById('btgCashDate').value = getToday();
+  closeSheet();
+  showToast(btgCashType === 'deposito' ? '✅ Depósito registrado!' : '✅ Saque registrado!');
+  renderBtg();
+}
+
+function removeBtgCash(id) {
+  const el = document.getElementById('btgcash-' + id);
+  if (el) {
+    el.classList.add('removing');
+    setTimeout(() => {
+      btgCash = btgCash.filter(c => c.id !== id);
+      saveBtgCashList();
+      renderBtg();
+    }, 300);
+  }
+}
+
+function getBtgCashBalance() {
+  return btgCash.reduce((s, c) => s + (c.type === 'deposito' ? c.amount : -c.amount), 0);
+}
+
+function renderBtgCashList() {
+  document.getElementById('btgCashTotal').textContent = fmtBRL(getBtgCashBalance());
+  const list = [...btgCash].sort((a, b) => b.date.localeCompare(a.date));
+  const el = document.getElementById('btgCashList');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">💰</div><div>Nenhum movimento registrado</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const sign = c.type === 'deposito' ? '+' : '-';
+    const dateStr = c.date ? new Date(c.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    return `<div class="swipe-row" id="btgcash-${c.id}">
+      <div class="swipe-actions"><button class="swipe-delete" onclick="removeBtgCash(${c.id})" aria-label="Excluir">🗑️</button></div>
+      <div class="swipe-content">
+        <div class="tx-icon" style="background:${c.type === 'deposito' ? 'var(--green-bg)' : 'var(--red-bg)'};color:${c.type === 'deposito' ? 'var(--green)' : 'var(--red)'}">${c.type === 'deposito' ? '📈' : '📉'}</div>
+        <div class="tx-info">
+          <div class="tx-desc">${c.type === 'deposito' ? 'Depósito' : 'Saque'}</div>
+          <div class="tx-meta">${dateStr}</div>
+        </div>
+        <span class="tx-amount ${c.type === 'deposito' ? 'income' : 'expense'}">${sign} ${fmtBRL(c.amount)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  attachSwipe(el);
+}
+
+function setNomadCashType(t) {
+  nomadCashType = t;
+  document.getElementById('nomadCashDepositoBtn').classList.toggle('active', t === 'deposito');
+  document.getElementById('nomadCashSaqueBtn').classList.toggle('active', t === 'saque');
+}
+
+function saveNomadCashList() {
+  localStorage.setItem('ff_nomad_cash', JSON.stringify(nomadCash));
+}
+
+function addNomadCash() {
+  const amount = parseFloat(document.getElementById('nomadCashAmount').value);
+  const date = document.getElementById('nomadCashDate').value || getToday();
+  if (!amount || amount <= 0) { showToast('⚠️ Informe um valor válido.'); return; }
+  const entry = { id: Date.now(), type: nomadCashType, amount, date };
+  nomadCash.unshift(entry);
+  saveNomadCashList();
+  document.getElementById('nomadCashAmount').value = '';
+  document.getElementById('nomadCashDate').value = getToday();
+  closeSheet();
+  showToast(nomadCashType === 'deposito' ? '✅ Depósito registrado!' : '✅ Saque registrado!');
+  renderNomad();
+}
+
+function removeNomadCash(id) {
+  const el = document.getElementById('nomadcash-' + id);
+  if (el) {
+    el.classList.add('removing');
+    setTimeout(() => {
+      nomadCash = nomadCash.filter(c => c.id !== id);
+      saveNomadCashList();
+      renderNomad();
+    }, 300);
+  }
+}
+
+function getNomadCashBalance() {
+  return nomadCash.reduce((s, c) => s + (c.type === 'deposito' ? c.amount : -c.amount), 0);
+}
+
+function renderNomadCashList() {
+  document.getElementById('nomadCashTotal').textContent = fmtEUR(getNomadCashBalance());
+  const list = [...nomadCash].sort((a, b) => b.date.localeCompare(a.date));
+  const el = document.getElementById('nomadCashList');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">💶</div><div>Nenhum movimento registrado</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const sign = c.type === 'deposito' ? '+' : '-';
+    const dateStr = c.date ? new Date(c.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    return `<div class="swipe-row" id="nomadcash-${c.id}">
+      <div class="swipe-actions"><button class="swipe-delete" onclick="removeNomadCash(${c.id})" aria-label="Excluir">🗑️</button></div>
+      <div class="swipe-content">
+        <div class="tx-icon" style="background:${c.type === 'deposito' ? 'var(--green-bg)' : 'var(--red-bg)'};color:${c.type === 'deposito' ? 'var(--green)' : 'var(--red)'}">${c.type === 'deposito' ? '📈' : '📉'}</div>
+        <div class="tx-info">
+          <div class="tx-desc">${c.type === 'deposito' ? 'Depósito' : 'Saque'}</div>
+          <div class="tx-meta">${dateStr}</div>
+        </div>
+        <span class="tx-amount ${c.type === 'deposito' ? 'income' : 'expense'}">${sign} ${fmtEUR(c.amount)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  attachSwipe(el);
+}
+
 function renderBtg() {
   renderBtgSummary();
   renderBtgPositions();
   renderBtgChart();
   renderBtgList();
+  renderBtgCashList();
 }
 
 /* ===== Metas (financial goals) ===== */
@@ -1362,13 +1583,14 @@ function formatEta(months, achievedMsg, undefinedMsg) {
 }
 
 function getBtgTotal() {
-  return getBtgPositions().reduce((s, p) => s + p.invested, 0);
+  return getBtgPositions().reduce((s, p) => s + p.invested, 0) + getBtgCashBalance();
 }
 
 function getNomadEur() {
   const nomadUsd = getNomadPositions().reduce((s, p) => s + p.invested, 0);
   const nomadBrl = nomadUsd * usdRate;
-  return goal && goal.eurRate > 0 ? nomadBrl / goal.eurRate : 0;
+  const investedEur = goal && goal.eurRate > 0 ? nomadBrl / goal.eurRate : 0;
+  return investedEur + getNomadCashBalance();
 }
 
 function renderGoal() {
@@ -1578,7 +1800,7 @@ function exportCSV() {
   showToast('📥 CSV exportado com sucesso!');
 }
 
-const BACKUP_KEYS = ['ff_transactions', 'ff_nomad', 'ff_usd_rate', 'ff_btg', 'ff_goal', 'ff_dark', 'ff_tab'];
+const BACKUP_KEYS = ['ff_transactions', 'ff_nomad', 'ff_usd_rate', 'ff_btg', 'ff_btg_cash', 'ff_nomad_cash', 'ff_goal', 'ff_dark', 'ff_tab'];
 
 function doBackup() {
   const backup = { version: 1, exportedAt: new Date().toISOString() };
@@ -1636,6 +1858,8 @@ renderAll();
 document.getElementById('nomadDate').value = getToday();
 document.getElementById('usdRate').value = usdRate;
 document.getElementById('btgDate').value = getToday();
+document.getElementById('btgCashDate').value = getToday();
+document.getElementById('nomadCashDate').value = getToday();
 switchTab(activeTab);
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
