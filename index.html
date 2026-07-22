@@ -142,6 +142,30 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 .action-item:last-child{border-bottom:none}
 .action-item.cancel{border-radius:14px;background:var(--surface);font-weight:700;color:var(--red)}
 
+/* ===== Metas (goals) ===== */
+.quote-card{background:linear-gradient(135deg,var(--blue-bg),var(--purple-bg));border-radius:var(--radius);padding:18px;margin-bottom:22px;position:relative;overflow:hidden}
+.quote-mark{font-size:28px;line-height:1;color:var(--blue);opacity:.5;font-weight:800}
+.quote-text{font-size:14.5px;font-weight:600;font-style:italic;color:var(--text);line-height:1.5;margin:4px 0 10px}
+.quote-attr{font-size:11.5px;color:var(--muted);font-weight:600}
+.empty-cta{text-align:center;padding:40px 24px}
+.empty-cta .empty-icon{font-size:40px;margin-bottom:12px}
+.empty-cta-title{font-size:17px;font-weight:800;margin-bottom:6px}
+.empty-cta-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.hero-card{background:linear-gradient(135deg,var(--blue),#5ac8fa);border-radius:var(--radius);padding:20px;margin-bottom:16px;color:#fff}
+.hero-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;opacity:.85}
+.hero-value{font-size:30px;font-weight:800;letter-spacing:-.6px;margin:6px 0 2px}
+.hero-sub{font-size:12.5px;opacity:.9}
+.progress-track{background:rgba(255,255,255,.3);border-radius:8px;height:8px;margin-top:14px;overflow:hidden}
+.dark .progress-track.on-surface{background:var(--surface2)}
+.progress-fill{background:#fff;height:100%;border-radius:8px;transition:width .5s ease}
+.progress-track.on-surface{background:var(--surface2)}
+.progress-track.on-surface .progress-fill{background:var(--blue)}
+.goal-breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);font-size:13px}
+.goal-breakdown-row:last-child{border-bottom:none}
+.goal-breakdown-label{color:var(--muted);font-weight:500}
+.goal-breakdown-value{font-weight:700;color:var(--text)}
+.goal-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+
 /* ===== Toast ===== */
 .toast{position:fixed;left:50%;bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px);transform:translateX(-50%) translateY(8px);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -291,6 +315,84 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
       </div>
     </div>
   </div>
+
+  <div id="viewMetas" style="display:none">
+    <div class="quote-card">
+      <div class="quote-mark">❝</div>
+      <div class="quote-text">O extraordinário nunca nasce de saltos dramáticos — nasce de pequenas ações repetidas com consistência, dia após dia, até se tornarem inevitáveis.</div>
+      <div class="quote-attr">— inspirado na Lei da Mudança Incremental, de Steven Bartlett (The Diary of a CEO)</div>
+    </div>
+
+    <div id="goalEmpty" class="panel empty-cta">
+      <div class="empty-icon">🎯</div>
+      <div class="empty-cta-title">Defina sua meta</div>
+      <div class="empty-cta-sub">Cadastre quanto deseja de renda mensal, sua rentabilidade esperada e seu aporte mensal. A gente calcula o prazo pra você viver de renda.</div>
+      <button class="btn-add" style="max-width:280px;margin:0 auto" onclick="openSheet('metas')">Configurar Minha Meta</button>
+    </div>
+
+    <div id="goalContent" style="display:none">
+      <div class="hero-card">
+        <div class="hero-label">Prazo Estimado</div>
+        <div class="hero-value" id="goalEta">—</div>
+        <div class="hero-sub" id="goalEtaSub">Configure sua meta para calcular</div>
+        <div class="progress-track"><div class="progress-fill" id="goalProgressBar" style="width:0%"></div></div>
+      </div>
+
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-icon" style="background:var(--purple-bg)">🏁</div>
+          <div class="card-label">Patrimônio Necessário</div>
+          <div class="card-value" id="goalRequired">€ 0</div>
+          <div class="card-sub" id="goalRequiredSub">para a renda desejada</div>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background:var(--green-bg)">💼</div>
+          <div class="card-label">Patrimônio Atual</div>
+          <div class="card-value income" id="goalCurrent">€ 0</div>
+          <div class="card-sub" id="goalCurrentSub">investido na Nomad</div>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background:var(--orange-bg)">📊</div>
+          <div class="card-label">Progresso</div>
+          <div class="card-value" id="goalPercent">0%</div>
+          <div class="card-sub" id="goalRemaining">restante</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Projeção Patrimonial</div>
+        <div class="panel">
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="goalChart"></canvas>
+            <div class="no-chart" id="goalNoChart" style="display:block">Configure sua meta para ver a projeção</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title" id="goalNameTitle">Sua Meta</div>
+        <div class="panel">
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Renda mensal desejada</span>
+            <span class="goal-breakdown-value" id="goalBreakIncome">—</span>
+          </div>
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Rentabilidade anual esperada</span>
+            <span class="goal-breakdown-value" id="goalBreakRate">—</span>
+          </div>
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Aporte mensal</span>
+            <span class="goal-breakdown-value" id="goalBreakContribution">—</span>
+          </div>
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Investido hoje (Nomad, convertido)</span>
+            <span class="goal-breakdown-value" id="goalBreakCurrent">—</span>
+          </div>
+          <div class="goal-note">Toque em <strong>+</strong> a qualquer momento para ajustar sua meta, aporte mensal ou cotação do euro. O cálculo considera apenas o que está investido na aba Nomad como patrimônio atual.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="tabbar">
@@ -299,6 +401,9 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   </button>
   <button class="tabbar-btn" id="tabNomadBtn" onclick="switchTab('nomad')">
     <span class="tabbar-icon">🌎</span><span>Nomad</span>
+  </button>
+  <button class="tabbar-btn" id="tabMetasBtn" onclick="switchTab('metas')">
+    <span class="tabbar-icon">🎯</span><span>Metas</span>
   </button>
 </div>
 
@@ -387,6 +492,37 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   <button class="btn-add" onclick="addNomad()">Registrar Operação</button>
 </div>
 
+<div class="sheet" id="sheetMetas">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">Sua Meta Financeira</span>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Nome da meta</label>
+      <input type="text" id="goalName" placeholder="Ex: Viver de Renda na Espanha">
+    </div>
+    <div class="form-group full">
+      <label>Renda mensal desejada (€)</label>
+      <input type="number" id="goalIncome" placeholder="8000" min="0" step="1" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>Rentabilidade anual (%)</label>
+      <input type="number" id="goalRate" placeholder="6" min="0.1" step="0.1" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>Aporte mensal (€)</label>
+      <input type="number" id="goalContribution" placeholder="1000" min="0" step="1" inputmode="decimal">
+    </div>
+    <div class="form-group full">
+      <label>Cotação do Euro (R$)</label>
+      <input type="number" id="goalEurRate" placeholder="5,85" min="0" step="0.01" inputmode="decimal">
+    </div>
+  </div>
+  <button class="btn-add" onclick="saveGoal()">Salvar Meta</button>
+</div>
+
 <div class="sheet" id="sheetMenu" style="background:transparent;box-shadow:none">
   <div class="action-group">
     <button class="action-item" onclick="doExport()">⬇ Exportar CSV</button>
@@ -436,14 +572,16 @@ function getToday() {
 }
 
 function openSheet(name) {
-  const id = name === 'nomad' ? 'sheetNomad' : name === 'menu' ? 'sheetMenu' : 'sheetGeral';
+  const map = { nomad: 'sheetNomad', menu: 'sheetMenu', metas: 'sheetMetas' };
+  const id = map[name] || 'sheetGeral';
+  if (id === 'sheetMetas') fillGoalForm();
   document.getElementById('sheetOverlay').classList.add('show');
   document.getElementById(id).classList.add('show');
 }
 
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
-  ['sheetGeral', 'sheetNomad', 'sheetMenu'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['sheetGeral', 'sheetNomad', 'sheetMenu', 'sheetMetas'].forEach(id => document.getElementById(id).classList.remove('show'));
 }
 
 function addTransaction() {
@@ -602,7 +740,7 @@ function renderList() {
     const sign = t.type === 'income' ? '+' : '-';
     const dateStr = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
     return `<div class="swipe-row" id="tx-${t.id}">
-      <div class="swipe-actions"><button class="swipe-delete" onclick="removeTransaction(${t.id})" aria-label="Excluir">🗑</button></div>
+      <div class="swipe-actions"><button class="swipe-delete" onclick="removeTransaction(${t.id})" aria-label="Excluir">🗑️</button></div>
       <div class="swipe-content">
         <div class="tx-icon" style="background:${cat.bg};color:${cat.text}">${cat.icon}</div>
         <div class="tx-info">
@@ -631,10 +769,13 @@ function switchTab(tab) {
   localStorage.setItem('ff_tab', tab);
   document.getElementById('viewGeral').style.display = tab === 'geral' ? '' : 'none';
   document.getElementById('viewNomad').style.display = tab === 'nomad' ? '' : 'none';
+  document.getElementById('viewMetas').style.display = tab === 'metas' ? '' : 'none';
   document.getElementById('tabGeralBtn').classList.toggle('active', tab === 'geral');
   document.getElementById('tabNomadBtn').classList.toggle('active', tab === 'nomad');
-  document.getElementById('navTitle').textContent = tab === 'nomad' ? 'Nomad Internacional' : 'Geral';
+  document.getElementById('tabMetasBtn').classList.toggle('active', tab === 'metas');
+  document.getElementById('navTitle').textContent = tab === 'nomad' ? 'Nomad Internacional' : tab === 'metas' ? 'Metas Financeiras' : 'Geral';
   if (tab === 'nomad') renderNomad();
+  if (tab === 'metas') renderGoal();
 }
 
 function setNomadType(t) {
@@ -791,7 +932,7 @@ function renderNomadList() {
     const dateStr = e.date ? new Date(e.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
     const total = e.qty * e.price;
     return `<div class="swipe-row" id="nomad-${e.id}">
-      <div class="swipe-actions"><button class="swipe-delete" onclick="removeNomad(${e.id})" aria-label="Excluir">🗑</button></div>
+      <div class="swipe-actions"><button class="swipe-delete" onclick="removeNomad(${e.id})" aria-label="Excluir">🗑️</button></div>
       <div class="swipe-content">
         <div class="tx-icon" style="background:${e.type === 'buy' ? 'var(--green-bg)' : 'var(--red-bg)'};color:${e.type === 'buy' ? 'var(--green)' : 'var(--red)'}">${e.type === 'buy' ? '📈' : '📉'}</div>
         <div class="tx-info">
@@ -810,6 +951,171 @@ function renderNomad() {
   renderNomadPositions();
   renderNomadChart();
   renderNomadList();
+}
+
+/* ===== Metas (financial goals) ===== */
+let goal = JSON.parse(localStorage.getItem('ff_goal') || 'null');
+let goalChart = null;
+
+function fmtEUR(v) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+}
+
+function fillGoalForm() {
+  const g = goal || {};
+  document.getElementById('goalName').value = g.name || 'Viver de Renda na Espanha';
+  document.getElementById('goalIncome').value = g.monthlyIncomeTarget || 8000;
+  document.getElementById('goalRate').value = g.annualRate || 6;
+  document.getElementById('goalContribution').value = g.monthlyContribution || '';
+  document.getElementById('goalEurRate').value = g.eurRate || 5.85;
+}
+
+function saveGoal() {
+  const name = document.getElementById('goalName').value.trim() || 'Viver de Renda na Espanha';
+  const monthlyIncomeTarget = parseFloat(document.getElementById('goalIncome').value);
+  const annualRate = parseFloat(document.getElementById('goalRate').value);
+  const monthlyContribution = parseFloat(document.getElementById('goalContribution').value) || 0;
+  const eurRate = parseFloat(document.getElementById('goalEurRate').value);
+  if (!monthlyIncomeTarget || monthlyIncomeTarget <= 0) { showToast('⚠️ Informe a renda mensal desejada.'); return; }
+  if (!annualRate || annualRate <= 0) { showToast('⚠️ Informe a rentabilidade anual esperada.'); return; }
+  if (!eurRate || eurRate <= 0) { showToast('⚠️ Informe a cotação do euro.'); return; }
+  goal = { name, monthlyIncomeTarget, annualRate, monthlyContribution, eurRate };
+  localStorage.setItem('ff_goal', JSON.stringify(goal));
+  closeSheet();
+  showToast('🎯 Meta salva com sucesso!');
+  renderGoal();
+}
+
+function calcMonthsToGoal(P, A, annualRatePct, FV) {
+  if (FV <= P) return 0;
+  const r = (annualRatePct / 100) / 12;
+  if (r <= 0) return A > 0 ? Math.ceil((FV - P) / A) : null;
+  const numer = FV * r + A;
+  const denom = P * r + A;
+  if (denom <= 0 || numer <= denom) return null;
+  const n = Math.log(numer / denom) / Math.log(1 + r);
+  return (!isFinite(n) || n < 0) ? null : Math.ceil(n);
+}
+
+function projectCapital(P, A, annualRatePct, months) {
+  const r = (annualRatePct / 100) / 12;
+  if (r <= 0) return P + A * months;
+  const x = Math.pow(1 + r, months);
+  return P * x + A * (x - 1) / r;
+}
+
+function getGoalCurrentCapital() {
+  const nomadUsd = getNomadPositions().reduce((s, p) => s + p.invested, 0);
+  const nomadBrl = nomadUsd * usdRate;
+  const eur = goal && goal.eurRate > 0 ? nomadBrl / goal.eurRate : 0;
+  return { nomadUsd, nomadBrl, eur };
+}
+
+function renderGoal() {
+  const emptyEl = document.getElementById('goalEmpty');
+  const contentEl = document.getElementById('goalContent');
+  if (!goal) {
+    emptyEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  contentEl.style.display = 'block';
+
+  document.getElementById('goalNameTitle').textContent = goal.name;
+
+  const required = (goal.monthlyIncomeTarget * 12) / (goal.annualRate / 100);
+  const current = getGoalCurrentCapital();
+  const remaining = Math.max(0, required - current.eur);
+  const percent = Math.min(100, (current.eur / required) * 100);
+
+  document.getElementById('goalRequired').textContent = fmtEUR(required);
+  document.getElementById('goalCurrent').textContent = fmtEUR(current.eur);
+  document.getElementById('goalPercent').textContent = percent.toFixed(1) + '%';
+  document.getElementById('goalRemaining').textContent = percent >= 100 ? 'meta atingida' : fmtEUR(remaining) + ' restantes';
+  document.getElementById('goalProgressBar').style.width = percent + '%';
+
+  document.getElementById('goalBreakIncome').textContent = fmtEUR(goal.monthlyIncomeTarget) + '/mês';
+  document.getElementById('goalBreakRate').textContent = goal.annualRate.toLocaleString('pt-BR') + '% a.a.';
+  document.getElementById('goalBreakContribution').textContent = goal.monthlyContribution > 0 ? fmtEUR(goal.monthlyContribution) + '/mês' : 'não informado';
+  document.getElementById('goalBreakCurrent').textContent = fmtEUR(current.eur) + ' (' + fmtBRL(current.nomadBrl) + ')';
+
+  const months = calcMonthsToGoal(current.eur, goal.monthlyContribution, goal.annualRate, required);
+  const etaEl = document.getElementById('goalEta');
+  const etaSubEl = document.getElementById('goalEtaSub');
+  if (percent >= 100) {
+    etaEl.textContent = '🎉 Meta atingida!';
+    etaSubEl.textContent = 'Seu patrimônio investido já cobre a renda desejada';
+  } else if (months === null) {
+    etaEl.textContent = 'Prazo indefinido';
+    etaSubEl.textContent = 'Aumente o aporte mensal ou a rentabilidade esperada';
+  } else {
+    const years = Math.floor(months / 12);
+    const rem = months % 12;
+    const parts = [];
+    if (years > 0) parts.push(years + (years === 1 ? ' ano' : ' anos'));
+    if (rem > 0) parts.push(rem + (rem === 1 ? ' mês' : ' meses'));
+    etaEl.textContent = parts.join(' e ') || 'menos de 1 mês';
+    const target = new Date();
+    target.setMonth(target.getMonth() + months);
+    etaSubEl.textContent = 'Estimativa: ' + target.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  }
+
+  renderGoalChart(current.eur, required, months);
+}
+
+function renderGoalChart(current, required, months) {
+  const noChart = document.getElementById('goalNoChart');
+  const canvas = document.getElementById('goalChart');
+  if (months === null) {
+    noChart.style.display = 'block';
+    noChart.textContent = 'Aumente o aporte mensal ou a rentabilidade para ver a projeção';
+    canvas.style.display = 'none';
+    if (goalChart) { goalChart.destroy(); goalChart = null; }
+    return;
+  }
+  if (typeof Chart === 'undefined') {
+    noChart.style.display = 'block';
+    noChart.textContent = 'Gráfico indisponível offline';
+    canvas.style.display = 'none';
+    return;
+  }
+  noChart.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const totalYears = Math.max(1, Math.ceil(months / 12));
+  const labels = [];
+  const projected = [];
+  for (let y = 0; y <= totalYears; y++) {
+    labels.push('Ano ' + y);
+    projected.push(Math.round(projectCapital(current, goal.monthlyContribution, goal.annualRate, y * 12)));
+  }
+  const goalLine = labels.map(() => required);
+
+  if (goalChart) goalChart.destroy();
+  goalChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Patrimônio Projetado', data: projected, borderColor: '#007aff', backgroundColor: 'rgba(0,122,255,.12)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
+        { label: 'Meta', data: goalLine, borderColor: '#8e8e93', borderDash: [6, 5], pointRadius: 0, borderWidth: 1.5, fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmtEUR(ctx.raw) } }
+      },
+      scales: {
+        x: { ticks: { maxTicksLimit: 6, font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { callback: v => fmtEUR(v), font: { size: 10 } }, grid: { color: 'rgba(142,142,147,.15)' } }
+      }
+    }
+  });
 }
 
 /* ===== Swipe-to-delete (pointer events, no global listeners) ===== */
