@@ -99,14 +99,22 @@ canvas{display:block}
 .toast.show{opacity:1;transform:translateY(0)}
 .fab{display:none;position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:var(--blue);color:#fff;font-size:26px;border:none;box-shadow:0 4px 14px rgba(37,99,235,.45);cursor:pointer;z-index:100;align-items:center;justify-content:center;font-family:'Inter',sans-serif}
 .fab:active{transform:scale(.94)}
+.tabs{display:flex;gap:8px;margin-bottom:20px}
+.tab-btn{flex:1;padding:12px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .2s;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tab-btn:not(.active):hover{background:var(--surface2);color:var(--text)}
+.pos-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:8px}
+.pos-ticker{font-weight:700;font-size:13px;color:var(--text)}
+.pos-detail{font-size:11px;color:var(--muted);margin-top:2px}
+.pos-value{font-weight:700;font-size:13px;text-align:right;color:var(--text)}
 @media(max-width:800px){
   .main-grid{grid-template-columns:1fr}
   .cards-grid{grid-template-columns:1fr 1fr}
   .fab{display:flex}
   input,select{font-size:16px;padding:11px 12px}
-  .btn-add,.type-btn,.sort-btn{min-height:44px}
+  .btn-add,.type-btn,.sort-btn,.tab-btn{min-height:44px}
   .btn-remove{padding:8px 10px;font-size:20px}
-  .tx-item{padding:13px 12px}
+  .tx-item,.pos-item{padding:13px 12px}
 }
 @media(max-width:500px){
   .cards-grid{grid-template-columns:1fr}
@@ -130,6 +138,12 @@ canvas{display:block}
     </div>
   </div>
 
+  <div class="tabs">
+    <button class="tab-btn active" id="tabGeralBtn" onclick="switchTab('geral')">📊 Geral</button>
+    <button class="tab-btn" id="tabNomadBtn" onclick="switchTab('nomad')">🌎 Nomad Internacional</button>
+  </div>
+
+  <div id="viewGeral">
   <div class="cards-grid">
     <div class="card">
       <div class="card-icon">💰</div>
@@ -232,6 +246,89 @@ canvas{display:block}
       </div>
     </div>
   </div>
+  </div>
+
+  <div id="viewNomad" style="display:none">
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">💵</div>
+        <div class="card-label">Total Investido (US$)</div>
+        <div class="card-value" id="nomadTotalUsd">US$ 0,00</div>
+        <div class="card-sub">na Nomad</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🇧🇷</div>
+        <div class="card-label">Convertido em Reais</div>
+        <div class="card-value" id="nomadTotalBrl">R$ 0,00</div>
+        <div class="card-sub" id="nomadRateSub">cotação R$ 0,00</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌎</div>
+        <div class="card-label">Ativos na Carteira</div>
+        <div class="card-value" id="nomadAssetCount" style="font-size:26px">0 ativos</div>
+        <div class="card-sub" id="nomadOpCount">0 operações</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-title">🌎 Nova Operação Nomad</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Cotação do Dólar (R$)</label>
+              <input type="number" id="usdRate" min="0" step="0.01" inputmode="decimal" onchange="updateUsdRate()">
+            </div>
+            <div class="form-group full">
+              <label>Tipo</label>
+              <div class="type-toggle">
+                <button class="type-btn income-btn active" id="buyBtn" onclick="setNomadType('buy')">📈 Compra</button>
+                <button class="type-btn expense-btn" id="sellBtn" onclick="setNomadType('sell')">📉 Venda</button>
+              </div>
+            </div>
+            <div class="form-group full">
+              <label>Ativo (Ticker)</label>
+              <input type="text" id="nomadTicker" placeholder="Ex: VOO, AAPL, VXUS..." style="text-transform:uppercase" onkeydown="if(event.key==='Enter')addNomad()">
+            </div>
+            <div class="form-group">
+              <label>Quantidade</label>
+              <input type="number" id="nomadQty" placeholder="0" min="0" step="0.000001" inputmode="decimal" onkeydown="if(event.key==='Enter')addNomad()">
+            </div>
+            <div class="form-group">
+              <label>Preço Unitário (US$)</label>
+              <input type="number" id="nomadPrice" placeholder="0,00" min="0" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')addNomad()">
+            </div>
+            <div class="form-group full">
+              <label>Data</label>
+              <input type="date" id="nomadDate">
+            </div>
+          </div>
+          <button class="btn-add" onclick="addNomad()">Registrar Operação</button>
+        </div>
+
+        <div class="panel" style="margin-bottom:20px">
+          <div class="panel-title">💼 Carteira (Posições)</div>
+          <div id="nomadPositions"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">📋 Operações</div>
+          <div class="tx-list" id="nomadList"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="panel-title">📊 Alocação por Ativo</div>
+          <div class="chart-wrap">
+            <canvas id="nomadChart"></canvas>
+            <div class="no-chart" id="nomadNoChart" style="display:block">Adicione operações para ver o gráfico</div>
+          </div>
+          <div class="legend" id="nomadLegend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -253,6 +350,12 @@ let transactions = JSON.parse(localStorage.getItem('ff_transactions') || '[]');
 let currentType = 'income';
 let sortMode = 'date-desc';
 let chart = null;
+
+let nomadEntries = JSON.parse(localStorage.getItem('ff_nomad') || '[]');
+let usdRate = parseFloat(localStorage.getItem('ff_usd_rate')) || 5.00;
+let nomadType = 'buy';
+let nomadChart = null;
+let activeTab = localStorage.getItem('ff_tab') || 'geral';
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -306,6 +409,10 @@ function save() {
 
 function fmtBRL(v) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function fmtUSD(v) {
+  return v.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 }
 
 function animateValue(el, target) {
@@ -443,6 +550,185 @@ function renderAll() {
   renderList();
 }
 
+function switchTab(tab) {
+  activeTab = tab;
+  localStorage.setItem('ff_tab', tab);
+  document.getElementById('viewGeral').style.display = tab === 'geral' ? '' : 'none';
+  document.getElementById('viewNomad').style.display = tab === 'nomad' ? '' : 'none';
+  document.getElementById('tabGeralBtn').classList.toggle('active', tab === 'geral');
+  document.getElementById('tabNomadBtn').classList.toggle('active', tab === 'nomad');
+  if (tab === 'nomad') renderNomad();
+}
+
+function setNomadType(t) {
+  nomadType = t;
+  document.getElementById('buyBtn').classList.toggle('active', t === 'buy');
+  document.getElementById('sellBtn').classList.toggle('active', t === 'sell');
+}
+
+function updateUsdRate() {
+  const v = parseFloat(document.getElementById('usdRate').value);
+  usdRate = (!v || v <= 0) ? usdRate : v;
+  document.getElementById('usdRate').value = usdRate;
+  localStorage.setItem('ff_usd_rate', usdRate);
+  renderNomad();
+}
+
+function saveNomad() {
+  localStorage.setItem('ff_nomad', JSON.stringify(nomadEntries));
+}
+
+function addNomad() {
+  const ticker = document.getElementById('nomadTicker').value.trim().toUpperCase();
+  const qty = parseFloat(document.getElementById('nomadQty').value);
+  const price = parseFloat(document.getElementById('nomadPrice').value);
+  const date = document.getElementById('nomadDate').value || getToday();
+  if (!ticker) { showToast('⚠️ Informe o ativo.'); return; }
+  if (!qty || qty <= 0) { showToast('⚠️ Informe uma quantidade válida.'); return; }
+  if (!price || price <= 0) { showToast('⚠️ Informe um preço válido.'); return; }
+  const entry = { id: Date.now(), ticker, type: nomadType, qty, price, date };
+  nomadEntries.unshift(entry);
+  saveNomad();
+  document.getElementById('nomadTicker').value = '';
+  document.getElementById('nomadQty').value = '';
+  document.getElementById('nomadPrice').value = '';
+  document.getElementById('nomadDate').value = getToday();
+  showToast(nomadType === 'buy' ? '✅ Compra registrada!' : '✅ Venda registrada!');
+  renderNomad();
+}
+
+function removeNomad(id) {
+  const el = document.getElementById('nomad-' + id);
+  if (el) {
+    el.style.animation = 'fadeOut .3s ease forwards';
+    setTimeout(() => {
+      nomadEntries = nomadEntries.filter(e => e.id !== id);
+      saveNomad();
+      renderNomad();
+    }, 280);
+  }
+}
+
+function getNomadPositions() {
+  const map = {};
+  nomadEntries.forEach(e => {
+    if (!map[e.ticker]) map[e.ticker] = { ticker: e.ticker, qty: 0, invested: 0 };
+    const sign = e.type === 'buy' ? 1 : -1;
+    map[e.ticker].qty += sign * e.qty;
+    map[e.ticker].invested += sign * e.qty * e.price;
+  });
+  return Object.values(map).filter(p => Math.abs(p.qty) > 1e-9);
+}
+
+function renderNomadSummary() {
+  const positions = getNomadPositions();
+  const totalUsd = positions.reduce((s, p) => s + p.invested, 0);
+  const totalBrl = totalUsd * usdRate;
+  document.getElementById('nomadTotalUsd').textContent = fmtUSD(totalUsd);
+  document.getElementById('nomadTotalBrl').textContent = fmtBRL(totalBrl);
+  document.getElementById('nomadRateSub').textContent = 'cotação ' + fmtBRL(usdRate);
+  document.getElementById('nomadAssetCount').textContent = positions.length + (positions.length === 1 ? ' ativo' : ' ativos');
+  document.getElementById('nomadOpCount').textContent = nomadEntries.length + (nomadEntries.length === 1 ? ' operação' : ' operações');
+}
+
+function renderNomadPositions() {
+  const positions = getNomadPositions().sort((a, b) => b.invested - a.invested);
+  const el = document.getElementById('nomadPositions');
+  if (!positions.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🌎</div><div>Nenhuma posição na carteira</div></div>`;
+    return;
+  }
+  el.innerHTML = positions.map(p => {
+    const avg = p.invested / p.qty;
+    return `<div class="pos-item">
+      <div style="flex:1;min-width:0">
+        <div class="pos-ticker">${escapeHtml(p.ticker)}</div>
+        <div class="pos-detail">${p.qty.toLocaleString('pt-BR', { maximumFractionDigits: 6 })} un · preço médio ${fmtUSD(avg)}</div>
+      </div>
+      <div>
+        <div class="pos-value">${fmtUSD(p.invested)}</div>
+        <div class="pos-detail" style="text-align:right">${fmtBRL(p.invested * usdRate)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderNomadChart() {
+  const positions = getNomadPositions();
+  const noChart = document.getElementById('nomadNoChart');
+  const canvas = document.getElementById('nomadChart');
+  if (!positions.length) {
+    noChart.style.display = 'block';
+    noChart.textContent = 'Adicione operações para ver o gráfico';
+    canvas.style.display = 'none';
+    if (nomadChart) { nomadChart.destroy(); nomadChart = null; }
+    document.getElementById('nomadLegend').innerHTML = '';
+    return;
+  }
+  const palette = ['#2563eb', '#7c3aed', '#ea580c', '#16a34a', '#dc2626', '#0891b2', '#0d9488', '#c026d3', '#65a30d', '#f59e0b'];
+  const labels = positions.map(p => p.ticker);
+  const data = positions.map(p => Math.max(p.invested, 0));
+  const colors = positions.map((_, i) => palette[i % palette.length]);
+  if (typeof Chart === 'undefined') {
+    noChart.style.display = 'block';
+    noChart.textContent = 'Gráfico indisponível offline';
+    canvas.style.display = 'none';
+    document.getElementById('nomadLegend').innerHTML = positions.map((p, i) =>
+      `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div><span>${escapeHtml(p.ticker)}: ${fmtUSD(p.invested)}</span></div>`
+    ).join('');
+    return;
+  }
+  noChart.style.display = 'none';
+  canvas.style.display = 'block';
+  if (nomadChart) nomadChart.destroy();
+  nomadChart = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtUSD(ctx.raw) + ' (' + ((ctx.raw / data.reduce((a, b) => a + b, 0)) * 100).toFixed(1) + '%)' } }
+      }
+    }
+  });
+  document.getElementById('nomadLegend').innerHTML = positions.map((p, i) =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div><span>${escapeHtml(p.ticker)}</span></div>`
+  ).join('');
+}
+
+function renderNomadList() {
+  const list = [...nomadEntries].sort((a, b) => b.date.localeCompare(a.date));
+  const el = document.getElementById('nomadList');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🌎</div><div>Nenhuma operação registrada</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(e => {
+    const sign = e.type === 'buy' ? '+' : '-';
+    const dateStr = e.date ? new Date(e.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const total = e.qty * e.price;
+    return `<div class="tx-item" id="nomad-${e.id}">
+      <div class="tx-icon" style="background:${e.type === 'buy' ? 'var(--green-bg)' : 'var(--red-bg)'};color:${e.type === 'buy' ? 'var(--green)' : 'var(--red)'}">${e.type === 'buy' ? '📈' : '📉'}</div>
+      <div class="tx-info">
+        <div class="tx-desc">${escapeHtml(e.ticker)} · ${e.qty.toLocaleString('pt-BR', { maximumFractionDigits: 6 })} un</div>
+        <div class="tx-meta">${dateStr} · ${fmtUSD(e.price)}/un</div>
+      </div>
+      <span class="tx-amount ${e.type === 'buy' ? 'income' : 'expense'}">${sign} ${fmtUSD(total)}</span>
+      <button class="btn-remove" onclick="removeNomad(${e.id})" title="Remover operação">×</button>
+    </div>`;
+  }).join('');
+}
+
+function renderNomad() {
+  renderNomadSummary();
+  renderNomadPositions();
+  renderNomadChart();
+  renderNomadList();
+}
+
 function toggleDark() {
   document.body.classList.toggle('dark');
   const on = document.body.classList.contains('dark');
@@ -451,9 +737,11 @@ function toggleDark() {
 }
 
 function scrollToForm() {
-  const panel = document.querySelector('.panel');
+  const view = activeTab === 'nomad' ? document.getElementById('viewNomad') : document.getElementById('viewGeral');
+  const panel = view.querySelector('.panel');
+  const focusId = activeTab === 'nomad' ? 'nomadTicker' : 'desc';
   if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => document.getElementById('desc').focus(), 350);
+  setTimeout(() => document.getElementById(focusId).focus(), 350);
 }
 
 function exportCSV() {
@@ -477,6 +765,10 @@ if (localStorage.getItem('ff_dark') === '1') {
 }
 document.getElementById('date').value = getToday();
 renderAll();
+
+document.getElementById('nomadDate').value = getToday();
+document.getElementById('usdRate').value = usdRate;
+switchTab(activeTab);
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
