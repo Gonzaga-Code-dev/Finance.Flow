@@ -2,8 +2,16 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
 <title>FinanceFlow — Controle Financeiro</title>
+<meta name="theme-color" content="#2563eb">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinanceFlow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -21,8 +29,8 @@
   --blue-bg:#1e3a5f;--purple-bg:#2e1a5e;--orange-bg:#431c05;--green-bg:#052e16;--red-bg:#450a0a;--gray-bg:#1f2937;
 }
 html,body{height:100%}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s;font-size:14px}
-.app{max-width:1100px;margin:0 auto;padding:24px 16px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s;font-size:14px;-webkit-tap-highlight-color:transparent;padding-bottom:env(safe-area-inset-bottom)}
+.app{max-width:1100px;margin:0 auto;padding:24px 16px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(24px,env(safe-area-inset-top))}
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
 .brand{font-size:20px;font-weight:700;color:var(--blue);letter-spacing:-.5px}
 .brand span{color:var(--text)}
@@ -89,14 +97,26 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 canvas{display:block}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:var(--bg);padding:10px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
+.fab{display:none;position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:var(--blue);color:#fff;font-size:26px;border:none;box-shadow:0 4px 14px rgba(37,99,235,.45);cursor:pointer;z-index:100;align-items:center;justify-content:center;font-family:'Inter',sans-serif}
+.fab:active{transform:scale(.94)}
 @media(max-width:800px){
   .main-grid{grid-template-columns:1fr}
   .cards-grid{grid-template-columns:1fr 1fr}
+  .fab{display:flex}
+  input,select{font-size:16px;padding:11px 12px}
+  .btn-add,.type-btn,.sort-btn{min-height:44px}
+  .btn-remove{padding:8px 10px;font-size:20px}
+  .tx-item{padding:13px 12px}
 }
 @media(max-width:500px){
   .cards-grid{grid-template-columns:1fr}
   .filters-row{flex-direction:column}
+  .app{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+  .topbar{margin-bottom:20px}
   .brand{font-size:16px}
+  .btn-icon{padding:8px 10px;font-size:11px}
+  .btn-icon span.icon-label{display:none}
+  .app{padding-bottom:88px}
 }
 </style>
 </head>
@@ -105,8 +125,8 @@ canvas{display:block}
   <div class="topbar">
     <div class="brand">Finance<span>Flow</span></div>
     <div class="actions">
-      <button class="btn-icon" onclick="exportCSV()">⬇ Exportar CSV</button>
-      <button class="btn-icon" id="darkToggle" onclick="toggleDark()">◐ Modo Escuro</button>
+      <button class="btn-icon" onclick="exportCSV()">⬇ <span class="icon-label">Exportar CSV</span></button>
+      <button class="btn-icon" id="darkToggle" onclick="toggleDark()">◐ <span class="icon-label">Modo Escuro</span></button>
     </div>
   </div>
 
@@ -149,7 +169,7 @@ canvas{display:block}
           </div>
           <div class="form-group">
             <label>Valor (R$)</label>
-            <input type="number" id="amount" placeholder="0,00" min="0" step="0.01" onkeydown="if(event.key==='Enter')addTransaction()">
+            <input type="number" id="amount" placeholder="0,00" min="0" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')addTransaction()">
           </div>
           <div class="form-group">
             <label>Data</label>
@@ -165,7 +185,7 @@ canvas{display:block}
               <option value="contas">🏠 Contas Fixas</option>
               <option value="outros">📦 Outros</option>
               <option value="salario">💵 Salário</option>
-              <option valie="salario incerto"> Salário PJ</option>
+              <option value="salario_pj">🧾 Salário PJ</option>
             </select>
           </div>
         </div>
@@ -188,7 +208,7 @@ canvas{display:block}
             <option value="contas">Contas</option>
             <option value="outros">Outros</option>
             <option value="salario">💵 Salário</option>
-            <option valie="salario incerto"> Salário PJ</option>
+            <option value="salario_pj">🧾 Salário PJ</option>
           </select>
           <select class="filter-select" id="filterType" onchange="renderList()">
             <option value="">Tudo</option>
@@ -215,6 +235,7 @@ canvas{display:block}
 </div>
 
 <div class="toast" id="toast"></div>
+<button class="fab" id="fabAdd" onclick="scrollToForm()" aria-label="Nova transação">+</button>
 
 <script>
 const CATS = {
@@ -223,7 +244,9 @@ const CATS = {
   lazer:{label:'Lazer',icon:'🎮',color:'#ea580c',bg:'#fff7ed',text:'#c2410c'},
   alimentacao:{label:'Alimentação',icon:'🍽',color:'#16a34a',bg:'#f0fdf4',text:'#15803d'},
   contas:{label:'Contas Fixas',icon:'🏠',color:'#dc2626',bg:'#fef2f2',text:'#b91c1c'},
-  outros:{label:'Outros',icon:'📦',color:'#6b7280',bg:'#f9fafb',text:'#4b5563'}
+  outros:{label:'Outros',icon:'📦',color:'#6b7280',bg:'#f9fafb',text:'#4b5563'},
+  salario:{label:'Salário',icon:'💵',color:'#0891b2',bg:'#ecfeff',text:'#0e7490'},
+  salario_pj:{label:'Salário PJ',icon:'🧾',color:'#0d9488',bg:'#f0fdfa',text:'#0f766e'}
 };
 
 let transactions = JSON.parse(localStorage.getItem('ff_transactions') || '[]');
@@ -311,7 +334,7 @@ function renderSummary() {
   animateValue(document.getElementById('expenseVal'), expense);
   const inc = transactions.filter(t => t.type === 'income').length;
   const exp = transactions.filter(t => t.type === 'expense').length;
-  document.getElementById('txCount').textContent = transactions.length + ' transação' + (transactions.length !== 1 ? 'ões' : '');
+  document.getElementById('txCount').textContent = transactions.length + ' ' + (transactions.length === 1 ? 'transação' : 'transações');
   document.getElementById('incomeCount').textContent = inc + ' receita' + (inc !== 1 ? 's' : '');
   document.getElementById('expenseCount').textContent = exp + ' despesa' + (exp !== 1 ? 's' : '');
 }
@@ -324,9 +347,19 @@ function renderChart() {
   const canvas = document.getElementById('pieChart');
   if (keys.length === 0) {
     noChart.style.display = 'block';
+    noChart.textContent = 'Adicione transações para ver o gráfico';
     canvas.style.display = 'none';
     if (chart) { chart.destroy(); chart = null; }
     document.getElementById('legend').innerHTML = '';
+    return;
+  }
+  if (typeof Chart === 'undefined') {
+    noChart.style.display = 'block';
+    noChart.textContent = 'Gráfico indisponível offline';
+    canvas.style.display = 'none';
+    document.getElementById('legend').innerHTML = keys.map(k =>
+      `<div class="legend-item"><div class="legend-dot" style="background:${CATS[k]?.color || '#888'}"></div><span>${CATS[k]?.label || k}: ${fmtBRL(catData[k])}</span></div>`
+    ).join('');
     return;
   }
   noChart.style.display = 'none';
@@ -413,8 +446,14 @@ function renderAll() {
 function toggleDark() {
   document.body.classList.toggle('dark');
   const on = document.body.classList.contains('dark');
-  document.getElementById('darkToggle').textContent = on ? '☀ Modo Claro' : '◐ Modo Escuro';
+  document.getElementById('darkToggle').innerHTML = on ? '☀ <span class="icon-label">Modo Claro</span>' : '◐ <span class="icon-label">Modo Escuro</span>';
   localStorage.setItem('ff_dark', on ? '1' : '0');
+}
+
+function scrollToForm() {
+  const panel = document.querySelector('.panel');
+  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => document.getElementById('desc').focus(), 350);
 }
 
 function exportCSV() {
@@ -434,10 +473,14 @@ function exportCSV() {
 
 if (localStorage.getItem('ff_dark') === '1') {
   document.body.classList.add('dark');
-  document.getElementById('darkToggle').textContent = '☀ Modo Claro';
+  document.getElementById('darkToggle').innerHTML = '☀ <span class="icon-label">Modo Claro</span>';
 }
 document.getElementById('date').value = getToday();
 renderAll();
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 </script>
 </body>
 </html>
