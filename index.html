@@ -118,6 +118,7 @@ canvas{display:block}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-group{display:flex;flex-direction:column;gap:6px}
 .form-group.full{grid-column:1/-1}
+.form-subtitle{font-size:13px;font-weight:800;color:var(--text);margin-top:6px;padding-top:12px;border-top:1px solid var(--border)}
 label{font-size:12px;font-weight:600;color:var(--muted)}
 input,select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;font-size:16px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .2s,background .2s;width:100%}
 input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
@@ -336,6 +337,12 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
         <div class="card-value" id="nomadAssetCount" style="font-size:18px">0 ativos</div>
         <div class="card-sub" id="nomadOpCount">0 operações</div>
       </div>
+      <div class="card">
+        <div class="card-icon" style="background:var(--orange-bg)">✈️</div>
+        <div class="card-label">Na Meta</div>
+        <div class="card-value income" id="nomadGoalShare" style="font-size:18px">—</div>
+        <div class="card-sub">da reserva p/ Espanha</div>
+      </div>
     </div>
 
     <div class="main-grid">
@@ -375,46 +382,74 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 
     <div id="goalEmpty" class="panel empty-cta">
       <div class="empty-icon">🎯</div>
-      <div class="empty-cta-title">Defina sua meta</div>
-      <div class="empty-cta-sub">Cadastre quanto deseja de renda mensal, sua rentabilidade esperada e seu aporte mensal. A gente calcula o prazo pra você viver de renda.</div>
-      <button class="btn-add" style="max-width:280px;margin:0 auto" onclick="openSheet('metas')">Configurar Minha Meta</button>
+      <div class="empty-cta-title">Defina suas metas</div>
+      <div class="empty-cta-sub">Cadastre sua renda mensal desejada (via FIIs na BTG) e sua reserva para migrar (via Nomad). A gente calcula o prazo de cada uma.</div>
+      <button class="btn-add" style="max-width:280px;margin:0 auto" onclick="openSheet('metas')">Configurar Minhas Metas</button>
     </div>
 
     <div id="goalContent" style="display:none">
-      <div class="hero-card">
-        <div class="hero-label">Prazo Estimado</div>
-        <div class="hero-value" id="goalEta">—</div>
-        <div class="hero-sub" id="goalEtaSub">Configure sua meta para calcular</div>
-        <div class="progress-track"><div class="progress-fill" id="goalProgressBar" style="width:0%"></div></div>
-      </div>
-
-      <div class="cards-grid">
-        <div class="card">
-          <div class="card-icon" style="background:var(--purple-bg)">🏁</div>
-          <div class="card-label">Patrimônio Necessário</div>
-          <div class="card-value" id="goalRequired">R$ 0</div>
-          <div class="card-sub" id="goalRequiredSub">para a renda desejada</div>
+      <div class="section">
+        <div class="section-title">🏝️ Viver de Renda</div>
+        <div class="hero-card">
+          <div class="hero-label">Prazo Estimado</div>
+          <div class="hero-value" id="incomeEta">—</div>
+          <div class="hero-sub" id="incomeEtaSub">Configure sua meta para calcular</div>
+          <div class="progress-track"><div class="progress-fill" id="incomeProgressBar" style="width:0%"></div></div>
         </div>
-        <div class="card">
-          <div class="card-icon" style="background:var(--green-bg)">💼</div>
-          <div class="card-label">Patrimônio Atual</div>
-          <div class="card-value income" id="goalCurrent">R$ 0</div>
-          <div class="card-sub" id="goalCurrentSub">Brasil + Nomad</div>
+        <div class="panel">
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Patrimônio necessário (BTG)</span>
+            <span class="goal-breakdown-value" id="incomeRequired">—</span>
+          </div>
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Patrimônio atual (BTG)</span>
+            <span class="goal-breakdown-value" id="incomeCurrent">—</span>
+          </div>
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Progresso</span>
+            <span class="goal-breakdown-value" id="incomePercent">—</span>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-icon" style="background:var(--orange-bg)">📊</div>
-          <div class="card-label">Progresso</div>
-          <div class="card-value" id="goalPercent">0%</div>
-          <div class="card-sub" id="goalRemaining">restante</div>
+        <div class="panel" style="margin-top:10px">
+          <div class="chart-wrap" style="height:200px">
+            <canvas id="incomeChart"></canvas>
+            <div class="no-chart" id="incomeNoChart" style="display:block">Configure sua meta para ver a projeção</div>
+          </div>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-title">Projeção Patrimonial</div>
-        <div class="panel">
-          <div class="chart-wrap" style="height:220px">
-            <canvas id="goalChart"></canvas>
-            <div class="no-chart" id="goalNoChart" style="display:block">Configure sua meta para ver a projeção</div>
+        <div class="section-title">✈️ Reserva para Espanha</div>
+        <div id="reserveNotSet" class="panel empty-cta" style="display:none">
+          <div class="empty-icon">✈️</div>
+          <div class="empty-cta-sub" style="margin-bottom:0">Informe sua reserva desejada e a cotação do euro na configuração da meta para acompanhar o prazo da mudança.</div>
+        </div>
+        <div id="reserveContent">
+          <div class="hero-card" style="background:linear-gradient(135deg,#af52de,#ff2d92)">
+            <div class="hero-label">Prazo Estimado</div>
+            <div class="hero-value" id="reserveEta">—</div>
+            <div class="hero-sub" id="reserveEtaSub">Configure sua reserva para calcular</div>
+            <div class="progress-track"><div class="progress-fill" id="reserveProgressBar" style="width:0%"></div></div>
+          </div>
+          <div class="panel">
+            <div class="goal-breakdown-row">
+              <span class="goal-breakdown-label">Reserva necessária (Nomad)</span>
+              <span class="goal-breakdown-value" id="reserveRequired">—</span>
+            </div>
+            <div class="goal-breakdown-row">
+              <span class="goal-breakdown-label">Reserva atual (Nomad)</span>
+              <span class="goal-breakdown-value" id="reserveCurrent">—</span>
+            </div>
+            <div class="goal-breakdown-row">
+              <span class="goal-breakdown-label">Progresso</span>
+              <span class="goal-breakdown-value" id="reservePercent">—</span>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:10px">
+            <div class="chart-wrap" style="height:200px">
+              <canvas id="reserveChart"></canvas>
+              <div class="no-chart" id="reserveNoChart" style="display:block">Configure sua reserva para ver a projeção</div>
+            </div>
           </div>
         </div>
       </div>
@@ -427,18 +462,26 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
             <span class="goal-breakdown-value" id="goalBreakIncome">—</span>
           </div>
           <div class="goal-breakdown-row">
-            <span class="goal-breakdown-label">Rentabilidade anual esperada</span>
-            <span class="goal-breakdown-value" id="goalBreakRate">—</span>
+            <span class="goal-breakdown-label">Rentabilidade anual da BTG (FIIs)</span>
+            <span class="goal-breakdown-value" id="goalBreakBtgRate">—</span>
           </div>
           <div class="goal-breakdown-row">
-            <span class="goal-breakdown-label">Aporte mensal</span>
-            <span class="goal-breakdown-value" id="goalBreakContribution">—</span>
+            <span class="goal-breakdown-label">Aporte mensal na BTG</span>
+            <span class="goal-breakdown-value" id="goalBreakBtgContribution">—</span>
           </div>
           <div class="goal-breakdown-row">
-            <span class="goal-breakdown-label">Investido hoje (BTG + Nomad)</span>
-            <span class="goal-breakdown-value" id="goalBreakCurrent">—</span>
+            <span class="goal-breakdown-label">Reserva desejada (Espanha)</span>
+            <span class="goal-breakdown-value" id="goalBreakReserve">—</span>
           </div>
-          <div class="goal-note">Toque em <strong>+</strong> a qualquer momento para ajustar sua meta, aporte mensal ou cotação do euro. O cálculo assume reinvestimento total dos rendimentos até a meta ser atingida, somando automaticamente o que está investido na BTG e na Nomad (convertido em reais pela cotação do dólar).</div>
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Rentabilidade anual da Nomad</span>
+            <span class="goal-breakdown-value" id="goalBreakNomadRate">—</span>
+          </div>
+          <div class="goal-breakdown-row">
+            <span class="goal-breakdown-label">Aporte mensal na Nomad</span>
+            <span class="goal-breakdown-value" id="goalBreakNomadContribution">—</span>
+          </div>
+          <div class="goal-note">Toque em <strong>+</strong> a qualquer momento para ajustar suas metas. Cada uma cresce com seu próprio aporte e rentabilidade — a renda de viver de FIIs vem da BTG, a reserva de mudança vem da Nomad. O cálculo assume reinvestimento total até cada meta ser atingida.</div>
         </div>
       </div>
     </div>
@@ -582,7 +625,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 <div class="sheet" id="sheetMetas">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <span class="sheet-title">Sua Meta Financeira</span>
+    <span class="sheet-title">Suas Metas Financeiras</span>
     <button class="sheet-close" onclick="closeSheet()">✕</button>
   </div>
   <div class="form-grid">
@@ -590,25 +633,39 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
       <label>Nome da meta</label>
       <input type="text" id="goalName" placeholder="Ex: Viver de Renda e Migrar para a Espanha">
     </div>
+    <div class="form-group full"><div class="form-subtitle">🏝️ Viver de Renda (BTG)</div></div>
     <div class="form-group full">
       <label>Renda mensal desejada (R$)</label>
       <input type="number" id="goalIncome" placeholder="8000" min="0" step="1" inputmode="decimal">
     </div>
     <div class="form-group">
-      <label>Rentabilidade anual (%)</label>
-      <input type="number" id="goalRate" placeholder="6" min="0.1" step="0.1" inputmode="decimal">
+      <label>Rentabilidade anual da BTG (%)</label>
+      <input type="number" id="goalBtgRate" placeholder="11" min="0.1" step="0.1" inputmode="decimal">
     </div>
     <div class="form-group">
-      <label>Aporte mensal (R$)</label>
-      <input type="number" id="goalContribution" placeholder="1000" min="0" step="1" inputmode="decimal">
+      <label>Aporte mensal na BTG (R$)</label>
+      <input type="number" id="goalBtgContribution" placeholder="1000" min="0" step="1" inputmode="decimal">
+    </div>
+    <div class="form-group full"><div class="form-subtitle">✈️ Reserva para Espanha (Nomad)</div></div>
+    <div class="form-group full">
+      <label>Reserva desejada (€)</label>
+      <input type="number" id="goalReserve" placeholder="8000" min="0" step="1" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>Rentabilidade anual da Nomad (%)</label>
+      <input type="number" id="goalNomadRate" placeholder="8" min="0.1" step="0.1" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label>Aporte mensal na Nomad (R$)</label>
+      <input type="number" id="goalNomadContribution" placeholder="500" min="0" step="1" inputmode="decimal">
     </div>
     <div class="form-group full">
-      <label>Cotação do Euro (R$) — opcional, para referência da mudança</label>
+      <label>Cotação do Euro (R$)</label>
       <input type="number" id="goalEurRate" placeholder="5,85" min="0" step="0.01" inputmode="decimal">
     </div>
   </div>
-  <div class="goal-note" style="margin-top:0;padding-top:0;border-top:none">O patrimônio investido no Brasil (BTG) e na Nomad é somado automaticamente — sem precisar digitar aqui.</div>
-  <button class="btn-add" onclick="saveGoal()">Salvar Meta</button>
+  <div class="goal-note" style="margin-top:0;padding-top:0;border-top:none">O patrimônio investido é somado automaticamente da BTG (renda) e da Nomad (reserva) — sem precisar digitar aqui. Rentabilidade da BTG já sugerida com base em FIIs (~11% a.a., não poupança/caixinha).</div>
+  <button class="btn-add" onclick="saveGoal()">Salvar Metas</button>
 </div>
 
 <div class="sheet" id="sheetMenu" style="background:transparent;box-shadow:none">
@@ -948,6 +1005,13 @@ function renderNomadSummary() {
   document.getElementById('nomadRateSub').textContent = 'cotação ' + fmtBRL(usdRate);
   document.getElementById('nomadAssetCount').textContent = positions.length + (positions.length === 1 ? ' ativo' : ' ativos');
   document.getElementById('nomadOpCount').textContent = nomadEntries.length + (nomadEntries.length === 1 ? ' operação' : ' operações');
+  const shareEl = document.getElementById('nomadGoalShare');
+  if (goal && goal.reserveTargetEur > 0 && goal.eurRate > 0) {
+    const eur = totalBrl / goal.eurRate;
+    shareEl.textContent = (Math.min(100, (eur / goal.reserveTargetEur) * 100)).toFixed(1) + '%';
+  } else {
+    shareEl.textContent = '—';
+  }
 }
 
 function renderNomadPositions() {
@@ -1114,8 +1178,8 @@ function renderBtgSummary() {
   document.getElementById('btgAssetCount').textContent = positions.length + (positions.length === 1 ? ' ativo' : ' ativos');
   document.getElementById('btgOpCount').textContent = btgEntries.length + (btgEntries.length === 1 ? ' operação' : ' operações');
   const shareEl = document.getElementById('btgGoalShare');
-  if (goal && goal.monthlyIncomeTarget > 0 && goal.annualRate > 0) {
-    const required = (goal.monthlyIncomeTarget * 12) / (goal.annualRate / 100);
+  if (goal && goal.monthlyIncomeTarget > 0 && goal.btgRate > 0) {
+    const required = (goal.monthlyIncomeTarget * 12) / (goal.btgRate / 100);
     shareEl.textContent = (Math.min(100, (total / required) * 100)).toFixed(1) + '%';
   } else {
     shareEl.textContent = '—';
@@ -1224,31 +1288,40 @@ function renderBtg() {
 
 /* ===== Metas (financial goals) ===== */
 let goal = JSON.parse(localStorage.getItem('ff_goal') || 'null');
-let goalChart = null;
+if (goal && !goal.btgRate) goal = null;
+let goalCharts = { income: null, reserve: null };
 
 function fillGoalForm() {
   const g = goal || {};
   document.getElementById('goalName').value = g.name || 'Viver de Renda e Migrar para a Espanha';
   document.getElementById('goalIncome').value = g.monthlyIncomeTarget || 8000;
-  document.getElementById('goalRate').value = g.annualRate || 6;
-  document.getElementById('goalContribution').value = g.monthlyContribution || '';
+  document.getElementById('goalBtgRate').value = g.btgRate || 11;
+  document.getElementById('goalBtgContribution').value = g.btgContribution || '';
+  document.getElementById('goalReserve').value = g.reserveTargetEur || 8000;
+  document.getElementById('goalNomadRate').value = g.nomadRate || 8;
+  document.getElementById('goalNomadContribution').value = g.nomadContribution || '';
   document.getElementById('goalEurRate').value = g.eurRate || '';
 }
 
 function saveGoal() {
   const name = document.getElementById('goalName').value.trim() || 'Viver de Renda e Migrar para a Espanha';
   const monthlyIncomeTarget = parseFloat(document.getElementById('goalIncome').value);
-  const annualRate = parseFloat(document.getElementById('goalRate').value);
-  const monthlyContribution = parseFloat(document.getElementById('goalContribution').value) || 0;
+  const btgRate = parseFloat(document.getElementById('goalBtgRate').value);
+  const btgContribution = parseFloat(document.getElementById('goalBtgContribution').value) || 0;
+  const reserveTargetEur = parseFloat(document.getElementById('goalReserve').value) || 0;
+  const nomadRate = parseFloat(document.getElementById('goalNomadRate').value) || 0;
+  const nomadContribution = parseFloat(document.getElementById('goalNomadContribution').value) || 0;
   const eurRate = parseFloat(document.getElementById('goalEurRate').value) || 0;
   if (!monthlyIncomeTarget || monthlyIncomeTarget <= 0) { showToast('⚠️ Informe a renda mensal desejada.'); return; }
-  if (!annualRate || annualRate <= 0) { showToast('⚠️ Informe a rentabilidade anual esperada.'); return; }
-  goal = { name, monthlyIncomeTarget, annualRate, monthlyContribution, eurRate };
+  if (!btgRate || btgRate <= 0) { showToast('⚠️ Informe a rentabilidade anual da BTG.'); return; }
+  if (reserveTargetEur > 0 && (!eurRate || eurRate <= 0)) { showToast('⚠️ Informe a cotação do euro para calcular a reserva.'); return; }
+  goal = { name, monthlyIncomeTarget, btgRate, btgContribution, reserveTargetEur, nomadRate, nomadContribution, eurRate };
   localStorage.setItem('ff_goal', JSON.stringify(goal));
   closeSheet();
-  showToast('🎯 Meta salva com sucesso!');
+  showToast('🎯 Metas salvas com sucesso!');
   renderGoal();
   renderBtgSummary();
+  renderNomadSummary();
 }
 
 function calcMonthsToGoal(P, A, annualRatePct, FV) {
@@ -1269,18 +1342,30 @@ function projectCapital(P, A, annualRatePct, months) {
   return P * x + A * (x - 1) / r;
 }
 
-function getGoalCurrentCapital() {
-  const nomadUsd = getNomadPositions().reduce((s, p) => s + p.invested, 0);
-  const nomadBrl = nomadUsd * usdRate;
-  const btgTotal = getBtgPositions().reduce((s, p) => s + p.invested, 0);
-  const totalBrl = nomadBrl + btgTotal;
-  return { nomadUsd, nomadBrl, btgTotal, totalBrl };
+function formatEta(months, achievedMsg, undefinedMsg) {
+  if (months === 0) return { label: '🎉 Meta atingida!', sub: achievedMsg };
+  if (months === null) return { label: 'Prazo indefinido', sub: undefinedMsg };
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  const parts = [];
+  if (years > 0) parts.push(years + (years === 1 ? ' ano' : ' anos'));
+  if (rem > 0) parts.push(rem + (rem === 1 ? ' mês' : ' meses'));
+  const target = new Date();
+  target.setMonth(target.getMonth() + months);
+  return {
+    label: parts.join(' e ') || 'menos de 1 mês',
+    sub: 'Estimativa: ' + target.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  };
 }
 
-function currencyNote(brlValue) {
-  const usd = '≈ ' + fmtUSD(brlValue / usdRate);
-  const eur = goal && goal.eurRate > 0 ? ' / ' + fmtEUR(brlValue / goal.eurRate) : '';
-  return usd + eur;
+function getBtgTotal() {
+  return getBtgPositions().reduce((s, p) => s + p.invested, 0);
+}
+
+function getNomadEur() {
+  const nomadUsd = getNomadPositions().reduce((s, p) => s + p.invested, 0);
+  const nomadBrl = nomadUsd * usdRate;
+  return goal && goal.eurRate > 0 ? nomadBrl / goal.eurRate : 0;
 }
 
 function renderGoal() {
@@ -1293,59 +1378,76 @@ function renderGoal() {
   }
   emptyEl.style.display = 'none';
   contentEl.style.display = 'block';
-
   document.getElementById('goalNameTitle').textContent = goal.name;
 
-  const required = (goal.monthlyIncomeTarget * 12) / (goal.annualRate / 100);
-  const current = getGoalCurrentCapital();
-  const remaining = Math.max(0, required - current.totalBrl);
-  const percent = Math.min(100, (current.totalBrl / required) * 100);
-
-  document.getElementById('goalRequired').textContent = fmtBRL(required);
-  document.getElementById('goalCurrent').textContent = fmtBRL(current.totalBrl);
-  document.getElementById('goalPercent').textContent = percent.toFixed(1) + '%';
-  document.getElementById('goalRemaining').textContent = percent >= 100 ? 'meta atingida' : fmtBRL(remaining) + ' restantes';
-  document.getElementById('goalProgressBar').style.width = percent + '%';
-  document.getElementById('goalRequiredSub').textContent = currencyNote(required);
-  document.getElementById('goalCurrentSub').textContent = currencyNote(current.totalBrl);
+  renderIncomeGoal();
+  renderReserveGoal();
 
   document.getElementById('goalBreakIncome').textContent = fmtBRL(goal.monthlyIncomeTarget) + '/mês';
-  document.getElementById('goalBreakRate').textContent = goal.annualRate.toLocaleString('pt-BR') + '% a.a.';
-  document.getElementById('goalBreakContribution').textContent = goal.monthlyContribution > 0 ? fmtBRL(goal.monthlyContribution) + '/mês' : 'não informado';
-  document.getElementById('goalBreakCurrent').textContent = fmtBRL(current.totalBrl) + ' = ' + fmtBRL(current.btgTotal) + ' (BTG) + ' + fmtBRL(current.nomadBrl) + ' (Nomad)';
-
-  const months = calcMonthsToGoal(current.totalBrl, goal.monthlyContribution, goal.annualRate, required);
-  const etaEl = document.getElementById('goalEta');
-  const etaSubEl = document.getElementById('goalEtaSub');
-  if (percent >= 100) {
-    etaEl.textContent = '🎉 Meta atingida!';
-    etaSubEl.textContent = 'Seu patrimônio investido já cobre a renda desejada';
-  } else if (months === null) {
-    etaEl.textContent = 'Prazo indefinido';
-    etaSubEl.textContent = 'Aumente o aporte mensal ou a rentabilidade esperada';
-  } else {
-    const years = Math.floor(months / 12);
-    const rem = months % 12;
-    const parts = [];
-    if (years > 0) parts.push(years + (years === 1 ? ' ano' : ' anos'));
-    if (rem > 0) parts.push(rem + (rem === 1 ? ' mês' : ' meses'));
-    etaEl.textContent = parts.join(' e ') || 'menos de 1 mês';
-    const target = new Date();
-    target.setMonth(target.getMonth() + months);
-    etaSubEl.textContent = 'Estimativa: ' + target.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  }
-
-  renderGoalChart(current.totalBrl, required, months);
+  document.getElementById('goalBreakBtgRate').textContent = goal.btgRate.toLocaleString('pt-BR') + '% a.a.';
+  document.getElementById('goalBreakBtgContribution').textContent = goal.btgContribution > 0 ? fmtBRL(goal.btgContribution) + '/mês' : 'não informado';
+  document.getElementById('goalBreakReserve').textContent = goal.reserveTargetEur > 0 ? fmtEUR(goal.reserveTargetEur) : 'não informado';
+  document.getElementById('goalBreakNomadRate').textContent = goal.nomadRate > 0 ? goal.nomadRate.toLocaleString('pt-BR') + '% a.a.' : '—';
+  document.getElementById('goalBreakNomadContribution').textContent = goal.nomadContribution > 0 ? fmtBRL(goal.nomadContribution) + '/mês' : 'não informado';
 }
 
-function renderGoalChart(current, required, months) {
-  const noChart = document.getElementById('goalNoChart');
-  const canvas = document.getElementById('goalChart');
+function renderIncomeGoal() {
+  const required = (goal.monthlyIncomeTarget * 12) / (goal.btgRate / 100);
+  const current = getBtgTotal();
+  const remaining = Math.max(0, required - current);
+  const percent = Math.min(100, (current / required) * 100);
+
+  document.getElementById('incomeRequired').textContent = fmtBRL(required);
+  document.getElementById('incomeCurrent').textContent = fmtBRL(current);
+  document.getElementById('incomePercent').textContent = percent.toFixed(1) + '% · ' + (percent >= 100 ? 'meta atingida' : fmtBRL(remaining) + ' restantes');
+  document.getElementById('incomeProgressBar').style.width = percent + '%';
+
+  const months = calcMonthsToGoal(current, goal.btgContribution, goal.btgRate, required);
+  const eta = formatEta(months, 'Seu patrimônio na BTG já cobre a renda desejada', 'Aumente o aporte mensal na BTG ou a rentabilidade esperada');
+  document.getElementById('incomeEta').textContent = eta.label;
+  document.getElementById('incomeEtaSub').textContent = eta.sub;
+
+  renderProjectionChart('incomeChart', 'incomeNoChart', 'income', current, goal.btgContribution, goal.btgRate, required, months, fmtBRL);
+}
+
+function renderReserveGoal() {
+  const notSetEl = document.getElementById('reserveNotSet');
+  const contentEl = document.getElementById('reserveContent');
+  if (!goal.reserveTargetEur || !goal.eurRate) {
+    notSetEl.style.display = 'block';
+    contentEl.style.display = 'none';
+    return;
+  }
+  notSetEl.style.display = 'none';
+  contentEl.style.display = 'block';
+
+  const required = goal.reserveTargetEur;
+  const current = getNomadEur();
+  const contributionEur = (goal.nomadContribution || 0) / goal.eurRate;
+  const remaining = Math.max(0, required - current);
+  const percent = Math.min(100, (current / required) * 100);
+
+  document.getElementById('reserveRequired').textContent = fmtEUR(required);
+  document.getElementById('reserveCurrent').textContent = fmtEUR(current);
+  document.getElementById('reservePercent').textContent = percent.toFixed(1) + '% · ' + (percent >= 100 ? 'meta atingida' : fmtEUR(remaining) + ' restantes');
+  document.getElementById('reserveProgressBar').style.width = percent + '%';
+
+  const months = calcMonthsToGoal(current, contributionEur, goal.nomadRate, required);
+  const eta = formatEta(months, 'Sua reserva na Nomad já cobre a mudança', 'Aumente o aporte mensal na Nomad ou a rentabilidade esperada');
+  document.getElementById('reserveEta').textContent = eta.label;
+  document.getElementById('reserveEtaSub').textContent = eta.sub;
+
+  renderProjectionChart('reserveChart', 'reserveNoChart', 'reserve', current, contributionEur, goal.nomadRate, required, months, fmtEUR);
+}
+
+function renderProjectionChart(canvasId, noChartId, key, current, contribution, rate, required, months, fmt) {
+  const noChart = document.getElementById(noChartId);
+  const canvas = document.getElementById(canvasId);
   if (months === null) {
     noChart.style.display = 'block';
     noChart.textContent = 'Aumente o aporte mensal ou a rentabilidade para ver a projeção';
     canvas.style.display = 'none';
-    if (goalChart) { goalChart.destroy(); goalChart = null; }
+    if (goalCharts[key]) { goalCharts[key].destroy(); goalCharts[key] = null; }
     return;
   }
   if (typeof Chart === 'undefined') {
@@ -1362,17 +1464,17 @@ function renderGoalChart(current, required, months) {
   const projected = [];
   for (let y = 0; y <= totalYears; y++) {
     labels.push('Ano ' + y);
-    projected.push(Math.round(projectCapital(current, goal.monthlyContribution, goal.annualRate, y * 12)));
+    projected.push(Math.round(projectCapital(current, contribution, rate, y * 12)));
   }
   const goalLine = labels.map(() => required);
 
-  if (goalChart) goalChart.destroy();
-  goalChart = new Chart(canvas, {
+  if (goalCharts[key]) goalCharts[key].destroy();
+  goalCharts[key] = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'Patrimônio Projetado', data: projected, borderColor: '#007aff', backgroundColor: 'rgba(0,122,255,.12)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
+        { label: 'Projetado', data: projected, borderColor: '#007aff', backgroundColor: 'rgba(0,122,255,.12)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2.5 },
         { label: 'Meta', data: goalLine, borderColor: '#8e8e93', borderDash: [6, 5], pointRadius: 0, borderWidth: 1.5, fill: false }
       ]
     },
@@ -1382,11 +1484,11 @@ function renderGoalChart(current, required, months) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmtBRL(ctx.raw) } }
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmt(ctx.raw) } }
       },
       scales: {
         x: { ticks: { maxTicksLimit: 6, font: { size: 10 } }, grid: { display: false } },
-        y: { ticks: { callback: v => fmtBRL(v), font: { size: 10 } }, grid: { color: 'rgba(142,142,147,.15)' } }
+        y: { ticks: { callback: v => fmt(v), font: { size: 10 } }, grid: { color: 'rgba(142,142,147,.15)' } }
       }
     }
   });
