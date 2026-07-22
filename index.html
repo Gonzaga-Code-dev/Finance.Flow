@@ -671,10 +671,13 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 <div class="sheet" id="sheetMenu" style="background:transparent;box-shadow:none">
   <div class="action-group">
     <button class="action-item" onclick="doExport()">⬇ Exportar CSV</button>
+    <button class="action-item" onclick="doBackup()">💾 Backup Completo</button>
+    <button class="action-item" onclick="triggerRestore()">📤 Restaurar Backup</button>
     <button class="action-item" id="darkModeItem" onclick="toggleDark()">◐ Ativar Modo Escuro</button>
   </div>
   <button class="action-item cancel" onclick="closeSheet()">Cancelar</button>
 </div>
+<input type="file" id="restoreFileInput" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
 
 <script>
 const CATS = {
@@ -1297,7 +1300,7 @@ function fillGoalForm() {
   document.getElementById('goalIncome').value = g.monthlyIncomeTarget || 8000;
   document.getElementById('goalBtgRate').value = g.btgRate || 11;
   document.getElementById('goalBtgContribution').value = g.btgContribution || '';
-  document.getElementById('goalReserve').value = g.reserveTargetEur || 8000;
+  document.getElementById('goalReserve').value = g.reserveTargetEur || '';
   document.getElementById('goalNomadRate').value = g.nomadRate || 8;
   document.getElementById('goalNomadContribution').value = g.nomadContribution || '';
   document.getElementById('goalEurRate').value = g.eurRate || '';
@@ -1573,6 +1576,54 @@ function exportCSV() {
   a.download = 'financeflow_' + new Date().toISOString().split('T')[0] + '.csv';
   a.click();
   showToast('📥 CSV exportado com sucesso!');
+}
+
+const BACKUP_KEYS = ['ff_transactions', 'ff_nomad', 'ff_usd_rate', 'ff_btg', 'ff_goal', 'ff_dark', 'ff_tab'];
+
+function doBackup() {
+  const backup = { version: 1, exportedAt: new Date().toISOString() };
+  BACKUP_KEYS.forEach(k => { backup[k] = localStorage.getItem(k); });
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'financeflow_backup_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  showToast('💾 Backup exportado com sucesso!');
+  closeSheet();
+}
+
+function triggerRestore() {
+  closeSheet();
+  document.getElementById('restoreFileInput').click();
+}
+
+function handleRestoreFile(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let data;
+    try {
+      data = JSON.parse(e.target.result);
+    } catch (err) {
+      showToast('⚠️ Arquivo de backup inválido.');
+      return;
+    }
+    const hasKnownKey = data && typeof data === 'object' && BACKUP_KEYS.some(k => k in data);
+    if (!hasKnownKey) {
+      showToast('⚠️ Esse arquivo não parece ser um backup do FinanceFlow.');
+      return;
+    }
+    if (!confirm('Isso vai substituir todos os dados atuais (Geral, BTG, Nomad e Meta) pelos do backup. Continuar?')) return;
+    BACKUP_KEYS.forEach(k => {
+      if (data[k] !== undefined && data[k] !== null) localStorage.setItem(k, data[k]);
+      else localStorage.removeItem(k);
+    });
+    showToast('✅ Backup restaurado! Recarregando...');
+    setTimeout(() => location.reload(), 900);
+  };
+  reader.readAsText(file);
 }
 
 if (localStorage.getItem('ff_dark') === '1') {
