@@ -502,25 +502,25 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
       </div>
 
       <div class="section">
-        <div class="section-title">🐷 Caixinha CCI</div>
+        <div class="section-title" id="cciSectionTitle">🐷 Terceira Meta</div>
         <div id="cciNotSet" class="panel empty-cta" style="display:none">
           <div class="empty-icon">🐷</div>
-          <div class="empty-cta-sub" style="margin-bottom:0">Informe o valor da meta, o aporte mensal e a rentabilidade da caixinha CCI na configuração da meta para acompanhar o prazo.</div>
+          <div class="empty-cta-sub" style="margin-bottom:0">Informe o nome, o valor da meta, o aporte mensal e a rentabilidade dessa meta na configuração para acompanhar o prazo.</div>
         </div>
         <div id="cciContent">
           <div class="hero-card" style="background:linear-gradient(135deg,#ff9500,#ffcc00)">
             <div class="hero-label">Prazo Estimado</div>
             <div class="hero-value" id="cciEta">—</div>
-            <div class="hero-sub" id="cciEtaSub">Configure sua caixinha para calcular</div>
+            <div class="hero-sub" id="cciEtaSub">Configure sua meta para calcular</div>
             <div class="progress-track"><div class="progress-fill" id="cciProgressBar" style="width:0%"></div></div>
           </div>
           <div class="panel">
             <div class="goal-breakdown-row">
-              <span class="goal-breakdown-label">Valor da meta (CCI)</span>
+              <span class="goal-breakdown-label" id="cciRequiredLabel">Valor da meta</span>
               <span class="goal-breakdown-value" id="cciRequired">—</span>
             </div>
             <div class="goal-breakdown-row">
-              <span class="goal-breakdown-label">Valor atual (CCI)</span>
+              <span class="goal-breakdown-label" id="cciCurrentLabel">Valor atual</span>
               <span class="goal-breakdown-value" id="cciCurrentVal">—</span>
             </div>
             <div class="goal-breakdown-row">
@@ -531,7 +531,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
           <div class="panel" style="margin-top:10px">
             <div class="chart-wrap" style="height:200px">
               <canvas id="cciChart"></canvas>
-              <div class="no-chart" id="cciNoChart" style="display:block">Configure sua caixinha para ver a projeção</div>
+              <div class="no-chart" id="cciNoChart" style="display:block">Configure sua meta para ver a projeção</div>
             </div>
           </div>
         </div>
@@ -565,18 +565,18 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
             <span class="goal-breakdown-value" id="goalBreakNomadContribution">—</span>
           </div>
           <div class="goal-breakdown-row">
-            <span class="goal-breakdown-label">Meta da caixinha CCI</span>
+            <span class="goal-breakdown-label" id="goalBreakCciLabel">Meta da terceira meta</span>
             <span class="goal-breakdown-value" id="goalBreakCci">—</span>
           </div>
           <div class="goal-breakdown-row">
-            <span class="goal-breakdown-label">Rentabilidade anual da CCI</span>
+            <span class="goal-breakdown-label" id="goalBreakCciRateLabel">Rentabilidade anual</span>
             <span class="goal-breakdown-value" id="goalBreakCciRate">—</span>
           </div>
           <div class="goal-breakdown-row">
-            <span class="goal-breakdown-label">Aporte mensal na CCI</span>
+            <span class="goal-breakdown-label" id="goalBreakCciContributionLabel">Aporte mensal</span>
             <span class="goal-breakdown-value" id="goalBreakCciContribution">—</span>
           </div>
-          <div class="goal-note">Toque em <strong>+</strong> a qualquer momento para ajustar suas metas. Cada uma cresce com seu próprio aporte e rentabilidade — a renda de viver de FIIs vem da BTG, a reserva de mudança vem da Nomad, e a caixinha CCI é acompanhada à parte. O cálculo assume reinvestimento total até cada meta ser atingida.</div>
+          <div class="goal-note">Toque em <strong>+</strong> a qualquer momento para ajustar suas metas. Cada uma cresce com seu próprio aporte e rentabilidade — a renda de viver de FIIs vem da BTG, a reserva de mudança vem da Nomad, e a terceira meta é acompanhada à parte. O cálculo assume reinvestimento total até cada meta ser atingida.</div>
         </div>
       </div>
     </div>
@@ -818,25 +818,29 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
       <label>Cotação do Euro (R$)</label>
       <input type="number" id="goalEurRate" placeholder="5,85" min="0" step="0.01" inputmode="decimal">
     </div>
-    <div class="form-group full"><div class="form-subtitle">🐷 Caixinha CCI</div></div>
+    <div class="form-group full"><div class="form-subtitle">🐷 Terceira Meta</div></div>
+    <div class="form-group full">
+      <label>Nome da meta</label>
+      <input type="text" id="goalCciName" placeholder="Ex: CDI">
+    </div>
     <div class="form-group full">
       <label>Valor da meta (R$)</label>
       <input type="number" id="goalCciTarget" placeholder="10000" min="0" step="1" inputmode="decimal">
     </div>
     <div class="form-group">
-      <label>Rentabilidade anual da CCI (%)</label>
+      <label>Rentabilidade anual (%)</label>
       <input type="number" id="goalCciRate" placeholder="10" min="0.1" step="0.1" inputmode="decimal">
     </div>
     <div class="form-group">
-      <label>Aporte mensal na CCI (R$)</label>
+      <label>Aporte mensal (R$)</label>
       <input type="number" id="goalCciContribution" placeholder="300" min="0" step="1" inputmode="decimal">
     </div>
     <div class="form-group full">
-      <label>Valor atual na caixinha (R$)</label>
+      <label>Valor atual (R$)</label>
       <input type="number" id="goalCciCurrent" placeholder="0" min="0" step="1" inputmode="decimal">
     </div>
   </div>
-  <div class="goal-note" style="margin-top:0;padding-top:0;border-top:none">O patrimônio investido é somado automaticamente da BTG (renda) e da Nomad (reserva) — sem precisar digitar aqui. Rentabilidade da BTG já sugerida com base em FIIs (~11% a.a., não poupança/caixinha). A caixinha CCI não tem aba própria, então atualize o "valor atual" aqui sempre que quiser recalcular o progresso.</div>
+  <div class="goal-note" style="margin-top:0;padding-top:0;border-top:none">O patrimônio investido é somado automaticamente da BTG (renda) e da Nomad (reserva) — sem precisar digitar aqui. Rentabilidade da BTG já sugerida com base em FIIs (~11% a.a., não poupança/caixinha). A terceira meta não tem aba própria, então atualize o "valor atual" aqui sempre que quiser recalcular o progresso.</div>
   <button class="btn-add" onclick="saveGoal()">Salvar Metas</button>
 </div>
 
@@ -1692,6 +1696,7 @@ function fillGoalForm() {
   document.getElementById('goalNomadRate').value = g.nomadRate || 8;
   document.getElementById('goalNomadContribution').value = g.nomadContribution || '';
   document.getElementById('goalEurRate').value = g.eurRate || '';
+  document.getElementById('goalCciName').value = g.cciName || '';
   document.getElementById('goalCciTarget').value = g.cciTarget || '';
   document.getElementById('goalCciRate').value = g.cciRate || 10;
   document.getElementById('goalCciContribution').value = g.cciContribution || '';
@@ -1707,6 +1712,7 @@ function saveGoal() {
   const nomadRate = parseFloat(document.getElementById('goalNomadRate').value) || 0;
   const nomadContribution = parseFloat(document.getElementById('goalNomadContribution').value) || 0;
   const eurRate = parseFloat(document.getElementById('goalEurRate').value) || 0;
+  const cciName = document.getElementById('goalCciName').value.trim() || 'Terceira Meta';
   const cciTarget = parseFloat(document.getElementById('goalCciTarget').value) || 0;
   const cciRate = parseFloat(document.getElementById('goalCciRate').value) || 0;
   const cciContribution = parseFloat(document.getElementById('goalCciContribution').value) || 0;
@@ -1714,8 +1720,8 @@ function saveGoal() {
   if (!monthlyIncomeTarget || monthlyIncomeTarget <= 0) { showToast('⚠️ Informe a renda mensal desejada.'); return; }
   if (!btgRate || btgRate <= 0) { showToast('⚠️ Informe a rentabilidade anual da BTG.'); return; }
   if (reserveTargetEur > 0 && (!eurRate || eurRate <= 0)) { showToast('⚠️ Informe a cotação do euro para calcular a reserva.'); return; }
-  if (cciTarget > 0 && (!cciRate || cciRate <= 0)) { showToast('⚠️ Informe a rentabilidade anual da caixinha CCI.'); return; }
-  goal = { name, monthlyIncomeTarget, btgRate, btgContribution, reserveTargetEur, nomadRate, nomadContribution, eurRate, cciTarget, cciRate, cciContribution, cciCurrent };
+  if (cciTarget > 0 && (!cciRate || cciRate <= 0)) { showToast('⚠️ Informe a rentabilidade anual da terceira meta.'); return; }
+  goal = { name, monthlyIncomeTarget, btgRate, btgContribution, reserveTargetEur, nomadRate, nomadContribution, eurRate, cciName, cciTarget, cciRate, cciContribution, cciCurrent };
   localStorage.setItem('ff_goal', JSON.stringify(goal));
   closeSheet();
   showToast('🎯 Metas salvas com sucesso!');
@@ -1791,6 +1797,10 @@ function renderGoal() {
   document.getElementById('goalBreakReserve').textContent = goal.reserveTargetEur > 0 ? fmtEUR(goal.reserveTargetEur) : 'não informado';
   document.getElementById('goalBreakNomadRate').textContent = goal.nomadRate > 0 ? goal.nomadRate.toLocaleString('pt-BR') + '% a.a.' : '—';
   document.getElementById('goalBreakNomadContribution').textContent = goal.nomadContribution > 0 ? fmtBRL(goal.nomadContribution) + '/mês' : 'não informado';
+  const cciName = goal.cciName || 'Terceira Meta';
+  document.getElementById('goalBreakCciLabel').textContent = 'Meta da ' + cciName;
+  document.getElementById('goalBreakCciRateLabel').textContent = 'Rentabilidade anual (' + cciName + ')';
+  document.getElementById('goalBreakCciContributionLabel').textContent = 'Aporte mensal (' + cciName + ')';
   document.getElementById('goalBreakCci').textContent = goal.cciTarget > 0 ? fmtBRL(goal.cciTarget) : 'não informado';
   document.getElementById('goalBreakCciRate').textContent = goal.cciRate > 0 ? goal.cciRate.toLocaleString('pt-BR') + '% a.a.' : '—';
   document.getElementById('goalBreakCciContribution').textContent = goal.cciContribution > 0 ? fmtBRL(goal.cciContribution) + '/mês' : 'não informado';
@@ -1848,6 +1858,8 @@ function renderReserveGoal() {
 function renderCciGoal() {
   const notSetEl = document.getElementById('cciNotSet');
   const contentEl = document.getElementById('cciContent');
+  const cciName = goal.cciName || 'Terceira Meta';
+  document.getElementById('cciSectionTitle').textContent = '🐷 ' + cciName;
   if (!goal.cciTarget || !goal.cciRate) {
     notSetEl.style.display = 'block';
     contentEl.style.display = 'none';
@@ -1861,13 +1873,15 @@ function renderCciGoal() {
   const remaining = Math.max(0, required - current);
   const percent = Math.min(100, (current / required) * 100);
 
+  document.getElementById('cciRequiredLabel').textContent = 'Valor da meta (' + cciName + ')';
+  document.getElementById('cciCurrentLabel').textContent = 'Valor atual (' + cciName + ')';
   document.getElementById('cciRequired').textContent = fmtBRL(required);
   document.getElementById('cciCurrentVal').textContent = fmtBRL(current);
   document.getElementById('cciPercent').textContent = percent.toFixed(1) + '% · ' + (percent >= 100 ? 'meta atingida' : fmtBRL(remaining) + ' restantes');
   document.getElementById('cciProgressBar').style.width = percent + '%';
 
   const months = calcMonthsToGoal(current, goal.cciContribution || 0, goal.cciRate, required);
-  const eta = formatEta(months, 'Sua caixinha CCI já cobre a meta', 'Aumente o aporte mensal na CCI ou a rentabilidade esperada');
+  const eta = formatEta(months, 'Sua ' + cciName + ' já cobre a meta', 'Aumente o aporte mensal ou a rentabilidade esperada');
   document.getElementById('cciEta').textContent = eta.label;
   document.getElementById('cciEtaSub').textContent = eta.sub;
 
