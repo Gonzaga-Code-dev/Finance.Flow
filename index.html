@@ -49,7 +49,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* ===== Bottom tab bar ===== */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:150;display:flex;background:rgba(248,248,250,.88);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);padding:6px 0 calc(4px + env(safe-area-inset-bottom))}
 .dark .tabbar{background:rgba(20,20,22,.82)}
-.tabbar-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--muted);font-size:10px;font-weight:600;padding:4px 0;cursor:pointer;font-family:var(--font);transition:transform .15s ease}
+.tabbar-btn{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--muted);font-size:10px;font-weight:600;padding:4px 0;cursor:pointer;font-family:var(--font);transition:transform .15s ease}
 .tabbar-btn:active{transform:scale(.92)}
 .tabbar-icon{font-size:22px;line-height:1}
 .tabbar-btn.active{color:var(--blue)}
@@ -100,6 +100,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .swipe-delete{flex:1;border:none;background:var(--red);color:#fff;font-size:19px;cursor:pointer;font-family:var(--font)}
 .row-delete{background:none;border:none;cursor:pointer;color:var(--light);font-size:19px;padding:2px 2px 2px 10px;line-height:1;flex-shrink:0;font-family:var(--font)}
 .row-delete:active{color:var(--red)}
+.mark-paid-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font);flex-shrink:0}
+.mark-paid-btn:active{transform:scale(.95)}
+.tab-dot{position:absolute;top:2px;right:calc(50% - 16px);width:9px;height:9px;border-radius:50%;background:var(--red);border:2px solid var(--bg)}
 .tx-icon{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .tx-info{flex:1;min-width:0}
 .tx-desc{font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -222,10 +225,21 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
         <div class="card-value expense" id="expenseVal">R$ 0,00</div>
         <div class="card-sub" id="expenseCount">0 despesas</div>
       </div>
+      <div class="card">
+        <div class="card-icon" style="background:var(--orange-bg)">⏰</div>
+        <div class="card-label">A Pagar</div>
+        <div class="card-value expense" id="pendingVal">R$ 0,00</div>
+        <div class="card-sub" id="pendingCount">0 pendentes</div>
+      </div>
     </div>
 
     <div class="main-grid">
       <div>
+        <div class="section" id="pendingSection" style="display:none">
+          <div class="section-title">⏰ Pendentes</div>
+          <div class="list-scroll" id="pendingList" style="max-height:280px"></div>
+        </div>
+
         <div class="section">
           <div class="section-title">Transações</div>
           <div class="filters-card">
@@ -524,6 +538,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 <div class="tabbar">
   <button class="tabbar-btn active" id="tabGeralBtn" onclick="switchTab('geral')">
     <span class="tabbar-icon">💰</span><span>Geral</span>
+    <span class="tab-dot" id="geralTabDot" style="display:none"></span>
   </button>
   <button class="tabbar-btn" id="tabBtgBtn" onclick="switchTab('btg')">
     <span class="tabbar-icon">🏦</span><span>BTG</span>
@@ -564,7 +579,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
     </div>
     <div class="form-group">
       <label>Data</label>
-      <input type="date" id="date">
+      <input type="date" id="date" onchange="onDateChange()">
     </div>
     <div class="form-group full">
       <label>Categoria</label>
@@ -578,6 +593,13 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
         <option value="salario">💵 Salário</option>
         <option value="salario_pj">🧾 Salário PJ</option>
       </select>
+    </div>
+    <div class="form-group full">
+      <label>Status</label>
+      <div class="type-toggle">
+        <button class="type-btn income-btn active" id="paidBtn" onclick="setPaid(true)">✅ Já paguei</button>
+        <button class="type-btn expense-btn" id="pendingBtn" onclick="setPaid(false)">⏰ Ainda vou pagar</button>
+      </div>
     </div>
   </div>
   <button class="btn-add" onclick="addTransaction()">Adicionar Transação</button>
@@ -778,6 +800,7 @@ const CATS = {
 
 let transactions = JSON.parse(localStorage.getItem('ff_transactions') || '[]');
 let currentType = 'income';
+let currentPaid = true;
 let sortMode = 'date-desc';
 let chart = null;
 
@@ -808,8 +831,27 @@ function setType(t) {
   document.getElementById('expenseBtn').classList.toggle('active', t === 'expense');
 }
 
+function setPaid(paid) {
+  currentPaid = paid;
+  document.getElementById('paidBtn').classList.toggle('active', paid);
+  document.getElementById('pendingBtn').classList.toggle('active', !paid);
+}
+
+function onDateChange() {
+  const date = document.getElementById('date').value;
+  setPaid(!date || date <= getToday());
+}
+
 function getToday() {
   return new Date().toISOString().split('T')[0];
+}
+
+function relativeDateInfo(dateStr) {
+  const diffDays = Math.round((new Date(dateStr + 'T00:00:00') - new Date(getToday() + 'T00:00:00')) / 86400000);
+  if (diffDays < 0) return { label: 'atrasada há ' + Math.abs(diffDays) + (Math.abs(diffDays) === 1 ? ' dia' : ' dias'), overdue: true, dueToday: false };
+  if (diffDays === 0) return { label: 'vence hoje', overdue: false, dueToday: true };
+  if (diffDays === 1) return { label: 'vence amanhã', overdue: false, dueToday: false };
+  return { label: 'vence em ' + diffDays + ' dias', overdue: false, dueToday: false };
 }
 
 function openSheet(name) {
@@ -832,14 +874,24 @@ function addTransaction() {
   const category = document.getElementById('category').value;
   if (!desc) { showToast('⚠️ Adicione uma descrição.'); return; }
   if (!amount || amount <= 0) { showToast('⚠️ Informe um valor válido.'); return; }
-  const tx = { id: Date.now(), desc, amount, type: currentType, category, date };
+  const tx = { id: Date.now(), desc, amount, type: currentType, category, date, paid: currentPaid };
   transactions.unshift(tx);
   save();
   document.getElementById('desc').value = '';
   document.getElementById('amount').value = '';
   document.getElementById('date').value = getToday();
+  setPaid(true);
   closeSheet();
-  showToast(currentType === 'income' ? '✅ Entrada adicionada!' : '✅ Saída registrada!');
+  showToast(currentPaid ? (currentType === 'income' ? '✅ Entrada adicionada!' : '✅ Saída registrada!') : '⏰ Lançamento pendente adicionado!');
+  renderAll();
+}
+
+function markPaid(id) {
+  const t = transactions.find(x => x.id === id);
+  if (!t) return;
+  t.paid = true;
+  save();
+  showToast('✅ Marcado como pago!');
   renderAll();
 }
 
@@ -887,24 +939,31 @@ function animateValue(el, target) {
 }
 
 function renderSummary() {
-  const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const settled = transactions.filter(t => t.paid !== false);
+  const pending = transactions.filter(t => t.paid === false);
+  const income = settled.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expense = settled.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const balance = income - expense;
   const bEl = document.getElementById('balanceVal');
   animateValue(bEl, balance);
   bEl.style.color = balance >= 0 ? 'var(--green)' : 'var(--red)';
   animateValue(document.getElementById('incomeVal'), income);
   animateValue(document.getElementById('expenseVal'), expense);
-  const inc = transactions.filter(t => t.type === 'income').length;
-  const exp = transactions.filter(t => t.type === 'expense').length;
-  document.getElementById('txCount').textContent = transactions.length + ' ' + (transactions.length === 1 ? 'transação' : 'transações');
+  const inc = settled.filter(t => t.type === 'income').length;
+  const exp = settled.filter(t => t.type === 'expense').length;
+  document.getElementById('txCount').textContent = settled.length + ' ' + (settled.length === 1 ? 'transação' : 'transações');
   document.getElementById('incomeCount').textContent = inc + ' receita' + (inc !== 1 ? 's' : '');
   document.getElementById('expenseCount').textContent = exp + ' despesa' + (exp !== 1 ? 's' : '');
+
+  const pendingExpense = pending.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const pendingIncome = pending.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  document.getElementById('pendingVal').textContent = fmtBRL(pendingExpense);
+  document.getElementById('pendingCount').textContent = pending.length + ' ' + (pending.length === 1 ? 'pendente' : 'pendentes') + (pendingIncome > 0 ? ' · +' + fmtBRL(pendingIncome) + ' a receber' : '');
 }
 
 function renderChart() {
   const catData = {};
-  transactions.forEach(t => { if (!catData[t.category]) catData[t.category] = 0; catData[t.category] += t.amount; });
+  transactions.filter(t => t.paid !== false).forEach(t => { if (!catData[t.category]) catData[t.category] = 0; catData[t.category] += t.amount; });
   const keys = Object.keys(catData);
   const noChart = document.getElementById('noChart');
   const canvas = document.getElementById('pieChart');
@@ -953,7 +1012,7 @@ function getFiltered() {
   const s = document.getElementById('search').value.toLowerCase();
   const cat = document.getElementById('filterCat').value;
   const type = document.getElementById('filterType').value;
-  let list = [...transactions];
+  let list = transactions.filter(t => t.paid !== false);
   if (s) list = list.filter(t => t.desc.toLowerCase().includes(s) || (CATS[t.category]?.label || '').toLowerCase().includes(s));
   if (cat) list = list.filter(t => t.category === cat);
   if (type) list = list.filter(t => t.type === type);
@@ -1000,6 +1059,41 @@ function renderList() {
   attachSwipe(el);
 }
 
+function renderPending() {
+  const pending = transactions.filter(t => t.paid === false).sort((a, b) => a.date.localeCompare(b.date));
+  const section = document.getElementById('pendingSection');
+  const el = document.getElementById('pendingList');
+  const dueNow = pending.some(t => t.date <= getToday());
+  document.getElementById('geralTabDot').style.display = dueNow ? 'block' : 'none';
+  if (!pending.length) {
+    section.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  section.style.display = 'block';
+  el.innerHTML = pending.map(t => {
+    const cat = CATS[t.category] || CATS.outros;
+    const sign = t.type === 'income' ? '+' : '-';
+    const dateStr = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const rel = relativeDateInfo(t.date);
+    const relColor = rel.overdue ? 'var(--red)' : rel.dueToday ? 'var(--orange)' : 'var(--muted)';
+    return `<div class="swipe-row" id="tx-${t.id}">
+      <div class="swipe-actions"><button class="swipe-delete" onclick="removeTransaction(${t.id})" aria-label="Excluir">🗑️</button></div>
+      <div class="swipe-content">
+        <div class="tx-icon" style="background:${cat.bg};color:${cat.text}">${cat.icon}</div>
+        <div class="tx-info">
+          <div class="tx-desc">${escapeHtml(t.desc)}</div>
+          <div class="tx-meta"><span style="color:${relColor};font-weight:600">${rel.label}</span> · ${dateStr}</div>
+        </div>
+        <span class="tx-amount ${t.type}">${sign} ${fmtBRL(t.amount)}</span>
+        <button class="mark-paid-btn" onclick="markPaid(${t.id})">✓ Pago</button>
+        <button class="row-delete" onclick="removeTransaction(${t.id})" aria-label="Excluir">×</button>
+      </div>
+    </div>`;
+  }).join('');
+  attachSwipe(el);
+}
+
 function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -1008,6 +1102,7 @@ function renderAll() {
   renderSummary();
   renderChart();
   renderList();
+  renderPending();
 }
 
 function switchTab(tab) {
