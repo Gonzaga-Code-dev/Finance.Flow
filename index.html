@@ -42,6 +42,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--surface2);border:none;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--blue);cursor:pointer;transition:transform .15s ease;font-family:var(--font)}
 .icon-btn:active{transform:scale(.9)}
 .icon-btn.primary{background:var(--blue);color:#fff;font-size:19px}
+.icon-btn.listening{background:var(--red);color:#fff;animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.5)}50%{box-shadow:0 0 0 8px rgba(255,59,48,0)}}
+#voiceMicIcon.listening{animation:micPulse 1.2s ease-in-out infinite;display:inline-block;border-radius:50%}
 
 /* ===== Content shell ===== */
 .app{max-width:1100px;margin:0 auto;padding:18px max(16px,env(safe-area-inset-right)) calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px) max(16px,env(safe-area-inset-left))}
@@ -198,6 +201,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   <div class="navbar-inner">
     <div class="nav-title" id="navTitle">Geral</div>
     <div class="nav-actions">
+      <button class="icon-btn" id="micBtn" onclick="startVoiceInput()" aria-label="Adicionar por voz">🎤</button>
       <button class="icon-btn" onclick="openSheet('menu')" aria-label="Mais opções">⋯</button>
       <button class="icon-btn primary" onclick="openSheet(activeTab)" aria-label="Adicionar">+</button>
     </div>
@@ -844,6 +848,23 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   <button class="btn-add" onclick="saveGoal()">Salvar Metas</button>
 </div>
 
+<div class="sheet" id="sheetVoice">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">Adicionar por Voz</span>
+    <button class="sheet-close" onclick="stopVoiceInput()">✕</button>
+  </div>
+  <div id="voiceListening" style="text-align:center;padding:20px 10px 8px">
+    <div id="voiceMicIcon" style="font-size:44px;margin-bottom:14px">🎤</div>
+    <div id="voiceStatus" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">Ouvindo...</div>
+    <div id="voiceTranscript" style="font-size:13px;color:var(--muted);min-height:20px">Diga algo como "adiciona uma entrada de 1500 reais pro dia 29"</div>
+  </div>
+  <div id="voiceUnsupported" class="empty" style="display:none">
+    <div class="empty-icon">🎤</div>
+    <div>Seu navegador não suporta reconhecimento de voz. Tenta pelo Chrome no Android.</div>
+  </div>
+</div>
+
 <div class="sheet" id="sheetMenu" style="background:transparent;box-shadow:none">
   <div class="action-group">
     <button class="action-item" onclick="doExport()">⬇ Exportar CSV</button>
@@ -892,6 +913,12 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+  if (voicePendingConfirm) {
+    voicePendingConfirm = false;
+    if (msg.startsWith('✅') && typeof speak === 'function') {
+      speak(msg.replace(/[^\p{L}\p{N}\s.,!?]/gu, '').trim() + '. Deseja algo mais?');
+    }
+  }
 }
 
 function setType(t) {
@@ -933,7 +960,7 @@ function openSheet(name) {
 
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
-  ['sheetGeral', 'sheetBtg', 'sheetBtgCash', 'sheetNomad', 'sheetNomadCash', 'sheetMenu', 'sheetMetas'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['sheetGeral', 'sheetBtg', 'sheetBtgCash', 'sheetNomad', 'sheetNomadCash', 'sheetMenu', 'sheetMetas', 'sheetVoice'].forEach(id => document.getElementById(id).classList.remove('show'));
 }
 
 function addTransaction() {
@@ -2069,6 +2096,216 @@ function handleRestoreFile(event) {
     setTimeout(() => location.reload(), 900);
   };
   reader.readAsText(file);
+}
+
+/* ===== Voice input (Web Speech API) ===== */
+let voiceRecognition = null;
+let voiceListening = false;
+let voicePendingConfirm = false;
+
+function getSpeechRecognition() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'pt-BR';
+    window.speechSynthesis.speak(u);
+  } catch (err) { /* ignore */ }
+}
+
+function stopListeningUI() {
+  voiceListening = false;
+  document.getElementById('voiceMicIcon').classList.remove('listening');
+  document.getElementById('micBtn').classList.remove('listening');
+}
+
+function startVoiceInput() {
+  const SR = getSpeechRecognition();
+  document.getElementById('voiceListening').style.display = SR ? 'block' : 'none';
+  document.getElementById('voiceUnsupported').style.display = SR ? 'none' : 'block';
+  document.getElementById('sheetOverlay').classList.add('show');
+  document.getElementById('sheetVoice').classList.add('show');
+  if (!SR) return;
+
+  document.getElementById('voiceStatus').textContent = 'Ouvindo...';
+  document.getElementById('voiceTranscript').textContent = 'Diga algo como "adiciona uma entrada de 1500 reais pro dia 29"';
+  document.getElementById('voiceMicIcon').classList.add('listening');
+  document.getElementById('micBtn').classList.add('listening');
+
+  voiceRecognition = new SR();
+  voiceRecognition.lang = 'pt-BR';
+  voiceRecognition.interimResults = true;
+  voiceRecognition.maxAlternatives = 1;
+  voiceListening = true;
+
+  voiceRecognition.onresult = (e) => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+    document.getElementById('voiceTranscript').textContent = transcript;
+    if (e.results[e.results.length - 1].isFinal) {
+      handleVoiceTranscript(transcript);
+    }
+  };
+  voiceRecognition.onerror = (e) => {
+    if (e.error === 'no-speech') {
+      document.getElementById('voiceStatus').textContent = 'Não ouvi nada.';
+    } else if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+      document.getElementById('voiceStatus').textContent = 'Permissão de microfone negada.';
+      showToast('⚠️ Permita o acesso ao microfone.');
+    } else {
+      document.getElementById('voiceStatus').textContent = 'Erro ao ouvir. Tenta de novo.';
+    }
+    stopListeningUI();
+  };
+  voiceRecognition.onend = () => {
+    stopListeningUI();
+  };
+  try {
+    voiceRecognition.start();
+  } catch (err) {
+    stopListeningUI();
+  }
+}
+
+function stopVoiceInput() {
+  if (voiceRecognition && voiceListening) {
+    try { voiceRecognition.abort(); } catch (err) { /* ignore */ }
+  }
+  stopListeningUI();
+  closeSheet();
+}
+
+function handleVoiceTranscript(transcript) {
+  stopListeningUI();
+  const intent = parseVoiceCommand(transcript);
+  if (!intent || intent.amount === null || isNaN(intent.amount)) {
+    document.getElementById('voiceStatus').textContent = 'Não consegui entender o valor.';
+    speak('Não consegui entender o valor. Pode repetir?');
+    return;
+  }
+  closeSheet();
+  applyVoiceIntent(intent);
+}
+
+/* Parses a natural-language pt-BR voice command into a structured intent */
+function parseVoiceCommand(rawText) {
+  const text = rawText.toLowerCase();
+  const norm = text.normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+  let target = 'geral';
+  if (/\bnomad\b/.test(norm)) target = 'nomad';
+  else if (/\bbtg\b/.test(norm)) target = 'btg';
+
+  const mentionsCash = /(saldo|conta|deposit|sac|saqu)/.test(norm);
+  const mentionsOp = /(aport|resgat|compr|vend)/.test(norm);
+  if (target === 'btg' && mentionsCash && !mentionsOp) target = 'btgCash';
+  if (target === 'nomad' && mentionsCash && !mentionsOp) target = 'nomadCash';
+
+  let type;
+  if (target === 'btg') type = /resgat/.test(norm) ? 'resgate' : 'aporte';
+  else if (target === 'btgCash') type = /sac|saqu/.test(norm) ? 'saque' : 'deposito';
+  else if (target === 'nomad') type = /vend/.test(norm) ? 'sell' : 'buy';
+  else if (target === 'nomadCash') type = /sac|saqu/.test(norm) ? 'saque' : 'deposito';
+  else {
+    type = /(entrada|receb|ganhei|sal[aá]rio)/.test(norm) ? 'income' : 'expense';
+  }
+
+  const amount = extractAmount(text);
+  const date = extractDate(text);
+
+  let desc = '';
+  if (target === 'geral') {
+    desc = rawText
+      .replace(/\b(adiciona|adicionar|registra|registrar|lan[çc]a|lançar|gastei|paguei|recebi|ganhei|comprei|uma?|de|com|do|da|dos|das|para|pro|pra|no|na|dia|hoje|ontem|amanh[ãa]|entrada|sa[ií]da|reais?|r\$)\b/gi, ' ')
+      .replace(/\d+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!desc) desc = 'Lançamento por voz';
+  }
+
+  return { target, type, amount, date, desc };
+}
+
+function extractAmount(text) {
+  let m = text.match(/(?:r\$|\$|€)\s*([\d]+(?:[.,]\d+)?)/i);
+  if (!m) m = text.match(/([\d]+(?:[.,]\d+)?)\s*(?:mil\s*)?(?:reais?|d[oó]lares?|euros?)/i);
+  if (!m) m = text.match(/([\d]+(?:[.,]\d+)?)/);
+  if (!m) return null;
+  return parseFloat(m[1].replace(',', '.'));
+}
+
+function extractDate(text) {
+  const norm = text.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const today = new Date();
+  if (/\bhoje\b/.test(norm)) return getToday();
+  if (/\bamanha\b/.test(norm)) { const d = new Date(today); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; }
+  if (/\bontem\b/.test(norm)) { const d = new Date(today); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; }
+
+  const dayMatch = norm.match(/dia\s+(\d{1,2})/);
+  if (dayMatch) {
+    const day = parseInt(dayMatch[1], 10);
+    let month = today.getMonth();
+    let year = today.getFullYear();
+    const monthNames = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    const monthMatch = norm.match(new RegExp('de\\s+(' + monthNames.join('|') + ')'));
+    if (monthMatch) {
+      month = monthNames.indexOf(monthMatch[1]);
+    } else if (day < today.getDate()) {
+      month += 1;
+      if (month > 11) { month = 0; year += 1; }
+    }
+    const d = new Date(year, month, day);
+    return d.toISOString().split('T')[0];
+  }
+  return getToday();
+}
+
+function applyVoiceIntent(intent) {
+  const dateStr = intent.date;
+  const dateLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR');
+  let spoken = '';
+  voicePendingConfirm = true;
+
+  if (intent.target === 'geral') {
+    openSheet('geral');
+    setType(intent.type);
+    document.getElementById('desc').value = intent.desc;
+    document.getElementById('amount').value = intent.amount;
+    document.getElementById('date').value = dateStr;
+    onDateChange();
+    spoken = 'Entendi: ' + (intent.type === 'income' ? 'entrada' : 'saída') + ' de ' + fmtBRL(intent.amount) + ', ' + intent.desc + ', dia ' + dateLabel + '. Confira e toque em adicionar.';
+  } else if (intent.target === 'btg') {
+    openSheet('btg');
+    setBtgType(intent.type);
+    document.getElementById('btgQty').value = 1;
+    document.getElementById('btgPrice').value = intent.amount;
+    document.getElementById('btgDate').value = dateStr;
+    spoken = 'Entendi: ' + intent.type + ' de ' + fmtBRL(intent.amount) + ' na BTG, dia ' + dateLabel + '. Confira o ativo e confirme.';
+  } else if (intent.target === 'btgCash') {
+    openSheet('btgCash');
+    setBtgCashType(intent.type);
+    document.getElementById('btgCashAmount').value = intent.amount;
+    document.getElementById('btgCashDate').value = dateStr;
+    spoken = 'Entendi: ' + (intent.type === 'deposito' ? 'depósito' : 'saque') + ' de ' + fmtBRL(intent.amount) + ' no saldo da BTG, dia ' + dateLabel + '. Confira e confirme.';
+  } else if (intent.target === 'nomad') {
+    openSheet('nomad');
+    setNomadType(intent.type);
+    document.getElementById('nomadQty').value = 1;
+    document.getElementById('nomadPrice').value = intent.amount;
+    document.getElementById('nomadDate').value = dateStr;
+    spoken = 'Entendi: ' + (intent.type === 'buy' ? 'compra' : 'venda') + ' de ' + fmtUSD(intent.amount) + ' na Nomad, dia ' + dateLabel + '. Confira o ativo e confirme.';
+  } else if (intent.target === 'nomadCash') {
+    openSheet('nomadCash');
+    setNomadCashType(intent.type);
+    document.getElementById('nomadCashAmount').value = intent.amount;
+    document.getElementById('nomadCashDate').value = dateStr;
+    spoken = 'Entendi: ' + (intent.type === 'deposito' ? 'depósito' : 'saque') + ' de ' + fmtEUR(intent.amount) + ' no saldo da Nomad, dia ' + dateLabel + '. Confira e confirme.';
+  }
+  speak(spoken);
 }
 
 if (localStorage.getItem('ff_dark') === '1') {
