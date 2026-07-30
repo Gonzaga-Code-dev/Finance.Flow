@@ -2102,19 +2102,41 @@ function handleRestoreFile(event) {
 let voiceRecognition = null;
 let voiceListening = false;
 let voicePendingConfirm = false;
+let voiceStep = 'initial'; // 'initial' | 'awaiting_desc'
+let voiceContext = null;
+let preferredVoice = null;
 
 function getSpeechRecognition() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-function speak(text) {
+function pickPreferredVoice() {
   if (!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+  const ptVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
+  const pool = ptVoices.length ? ptVoices : voices;
+  let chosen = pool.find(v => /male/i.test(v.name) && !/female/i.test(v.name));
+  if (!chosen) chosen = pool.find(v => /(homem|masculin)/i.test(v.name));
+  if (!chosen && pool.length > 1) chosen = pool[pool.length - 1];
+  preferredVoice = chosen || pool[0] || null;
+}
+if ('speechSynthesis' in window) {
+  pickPreferredVoice();
+  window.speechSynthesis.onvoiceschanged = pickPreferredVoice;
+}
+
+function speak(text, onEnd) {
+  if (!('speechSynthesis' in window)) { if (onEnd) onEnd(); return; }
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'pt-BR';
+    u.pitch = 0.8;
+    if (preferredVoice) u.voice = preferredVoice;
+    if (onEnd) u.onend = onEnd;
     window.speechSynthesis.speak(u);
-  } catch (err) { /* ignore */ }
+  } catch (err) { if (onEnd) onEnd(); }
 }
 
 function stopListeningUI() {
@@ -2124,6 +2146,8 @@ function stopListeningUI() {
 }
 
 function startVoiceInput() {
+  voiceStep = 'initial';
+  voiceContext = null;
   const SR = getSpeechRecognition();
   document.getElementById('voiceListening').style.display = SR ? 'block' : 'none';
   document.getElementById('voiceUnsupported').style.display = SR ? 'none' : 'block';
@@ -2133,6 +2157,12 @@ function startVoiceInput() {
 
   document.getElementById('voiceStatus').textContent = 'Ouvindo...';
   document.getElementById('voiceTranscript').textContent = 'Diga algo como "adiciona uma entrada de 1500 reais pro dia 29"';
+  beginListening();
+}
+
+function beginListening() {
+  const SR = getSpeechRecognition();
+  if (!SR) return;
   document.getElementById('voiceMicIcon').classList.add('listening');
   document.getElementById('micBtn').classList.add('listening');
 
@@ -2151,6 +2181,10 @@ function startVoiceInput() {
     }
   };
   voiceRecognition.onerror = (e) => {
+    if (voiceStep === 'awaiting_desc') {
+      handleVoiceDescReply('');
+      return;
+    }
     if (e.error === 'no-speech') {
       document.getElementById('voiceStatus').textContent = 'Não ouvi nada.';
     } else if (e.error === 'not-allowed' || e.error === 'permission-denied') {
@@ -2176,17 +2210,66 @@ function stopVoiceInput() {
     try { voiceRecognition.abort(); } catch (err) { /* ignore */ }
   }
   stopListeningUI();
+  voiceStep = 'initial';
+  voiceContext = null;
   closeSheet();
 }
 
 function handleVoiceTranscript(transcript) {
   stopListeningUI();
+  if (voiceStep === 'awaiting_desc') {
+    handleVoiceDescReply(transcript);
+    return;
+  }
   const intent = parseVoiceCommand(transcript);
   if (!intent || intent.amount === null || isNaN(intent.amount)) {
     document.getElementById('voiceStatus').textContent = 'Não consegui entender o valor.';
     speak('Não consegui entender o valor. Pode repetir?');
     return;
   }
+  if (intent.target === 'geral' && intent.needsDesc) {
+    voiceContext = intent;
+    voiceStep = 'awaiting_desc';
+    document.getElementById('voiceStatus').textContent = 'Ouvindo a descrição...';
+    document.getElementById('voiceTranscript').textContent = 'Ex: "Aluguel, categoria contas"';
+    speak('Qual é a descrição e a categoria dessa entrada?', () => beginListening());
+    return;
+  }
+  closeSheet();
+  applyVoiceIntent(intent);
+}
+
+const VOICE_CATEGORY_KEYWORDS = [
+  { key: 'salario_pj', re: /sal[aá]rio\s*pj|\bpj\b/ },
+  { key: 'salario', re: /sal[aá]rio/ },
+  { key: 'investimentos', re: /investi/ },
+  { key: 'estudos', re: /estud|curso/ },
+  { key: 'lazer', re: /lazer|divers/ },
+  { key: 'alimentacao', re: /alimenta|comida|mercado|restaurante/ },
+  { key: 'contas', re: /contas?\b|alugu?el|\bluz\b|[aá]gua|internet/ }
+];
+
+function handleVoiceDescReply(transcript) {
+  stopListeningUI();
+  voiceStep = 'initial';
+  const intent = voiceContext;
+  voiceContext = null;
+  if (!intent) return;
+
+  const norm = (transcript || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  let category = 'outros';
+  for (const c of VOICE_CATEGORY_KEYWORDS) {
+    if (c.re.test(norm)) { category = c.key; break; }
+  }
+  let cleaned = (transcript || '')
+    .replace(/\bcategoria\s+[^\s,]+/gi, ' ')
+    .replace(/\b(categoria|é|eh)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) cleaned = 'Lançamento por voz';
+
+  intent.desc = cleaned;
+  intent.category = category;
   closeSheet();
   applyVoiceIntent(intent);
 }
@@ -2218,16 +2301,17 @@ function parseVoiceCommand(rawText) {
   const date = extractDate(text);
 
   let desc = '';
+  let needsDesc = false;
   if (target === 'geral') {
     desc = rawText
       .replace(/\b(adiciona|adicionar|registra|registrar|lan[çc]a|lançar|gastei|paguei|recebi|ganhei|comprei|uma?|de|com|do|da|dos|das|para|pro|pra|no|na|dia|hoje|ontem|amanh[ãa]|entrada|sa[ií]da|reais?|r\$)\b/gi, ' ')
       .replace(/\d+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    if (!desc) desc = 'Lançamento por voz';
+    if (!desc) { desc = ''; needsDesc = true; }
   }
 
-  return { target, type, amount, date, desc };
+  return { target, type, amount, date, desc, needsDesc };
 }
 
 function extractAmount(text) {
@@ -2276,6 +2360,7 @@ function applyVoiceIntent(intent) {
     document.getElementById('desc').value = intent.desc;
     document.getElementById('amount').value = intent.amount;
     document.getElementById('date').value = dateStr;
+    if (intent.category) document.getElementById('category').value = intent.category;
     onDateChange();
     spoken = 'Entendi: ' + (intent.type === 'income' ? 'entrada' : 'saída') + ' de ' + fmtBRL(intent.amount) + ', ' + intent.desc + ', dia ' + dateLabel + '. Confira e toque em adicionar.';
   } else if (intent.target === 'btg') {
