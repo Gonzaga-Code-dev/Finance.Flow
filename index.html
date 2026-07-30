@@ -865,12 +865,29 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
   </div>
 </div>
 
+<div class="sheet" id="sheetVoicePicker">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title">Escolher Voz</span>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group full">
+      <label>Vozes disponíveis no seu aparelho</label>
+      <select id="voiceSelect"></select>
+    </div>
+  </div>
+  <button class="btn-add" style="background:var(--surface2);color:var(--blue);box-shadow:none;margin-bottom:8px" onclick="testSelectedVoice()">▶️ Testar Voz</button>
+  <button class="btn-add" onclick="saveSelectedVoice()">Salvar Voz</button>
+</div>
+
 <div class="sheet" id="sheetMenu" style="background:transparent;box-shadow:none">
   <div class="action-group">
     <button class="action-item" onclick="doExport()">⬇ Exportar CSV</button>
     <button class="action-item" onclick="doBackup()">💾 Backup Completo</button>
     <button class="action-item" onclick="triggerRestore()">📤 Restaurar Backup</button>
     <button class="action-item" id="darkModeItem" onclick="toggleDark()">◐ Ativar Modo Escuro</button>
+    <button class="action-item" onclick="openVoicePicker()">🔊 Escolher Voz</button>
   </div>
   <div style="text-align:center;color:var(--muted);font-size:11px;padding:10px 0 6px" id="appVersionLabel">v—</div>
   <button class="action-item cancel" onclick="closeSheet()">Cancelar</button>
@@ -878,7 +895,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 <input type="file" id="restoreFileInput" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
 
 <script>
-const APP_VERSION = 'v17';
+const APP_VERSION = 'v18';
 
 const CATS = {
   investimentos:{label:'Investimentos',icon:'💼',color:'#007aff',bg:'#e8f1ff',text:'#0056b3'},
@@ -963,7 +980,7 @@ function openSheet(name) {
 
 function closeSheet() {
   document.getElementById('sheetOverlay').classList.remove('show');
-  ['sheetGeral', 'sheetBtg', 'sheetBtgCash', 'sheetNomad', 'sheetNomadCash', 'sheetMenu', 'sheetMetas', 'sheetVoice'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['sheetGeral', 'sheetBtg', 'sheetBtgCash', 'sheetNomad', 'sheetNomadCash', 'sheetMenu', 'sheetMetas', 'sheetVoice', 'sheetVoicePicker'].forEach(id => document.getElementById(id).classList.remove('show'));
 }
 
 function addTransaction() {
@@ -2117,12 +2134,65 @@ function pickPreferredVoice() {
   if (!('speechSynthesis' in window)) return;
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return;
+  const savedName = localStorage.getItem('ff_voice_name');
+  if (savedName) {
+    const saved = voices.find(v => v.name === savedName);
+    if (saved) { preferredVoice = saved; return; }
+  }
   const ptVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
   const pool = ptVoices.length ? ptVoices : voices;
   let chosen = pool.find(v => /male/i.test(v.name) && !/female/i.test(v.name));
   if (!chosen) chosen = pool.find(v => /(homem|masculin)/i.test(v.name));
   if (!chosen && pool.length > 1) chosen = pool[pool.length - 1];
   preferredVoice = chosen || pool[0] || null;
+}
+
+function populateVoiceSelect() {
+  const sel = document.getElementById('voiceSelect');
+  const voices = ('speechSynthesis' in window) ? window.speechSynthesis.getVoices() : [];
+  sel.innerHTML = '';
+  if (!voices.length) {
+    sel.innerHTML = '<option value="">Nenhuma voz encontrada no aparelho</option>';
+    return;
+  }
+  const savedName = localStorage.getItem('ff_voice_name') || (preferredVoice ? preferredVoice.name : '');
+  voices.forEach((v) => {
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    opt.textContent = v.name + ' (' + v.lang + ')';
+    if (v.name === savedName) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function openVoicePicker() {
+  closeSheet();
+  populateVoiceSelect();
+  document.getElementById('sheetOverlay').classList.add('show');
+  document.getElementById('sheetVoicePicker').classList.add('show');
+}
+
+function testSelectedVoice() {
+  if (!('speechSynthesis' in window)) { showToast('⚠️ Seu navegador não suporta voz.'); return; }
+  const name = document.getElementById('voiceSelect').value;
+  const voices = window.speechSynthesis.getVoices();
+  const v = voices.find(x => x.name === name);
+  if (!v) { showToast('⚠️ Nenhuma voz disponível.'); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance('Olá! Essa é a minha voz. Deseja algo mais?');
+  u.voice = v;
+  u.lang = v.lang || 'pt-BR';
+  u.pitch = 0.8;
+  window.speechSynthesis.speak(u);
+}
+
+function saveSelectedVoice() {
+  const name = document.getElementById('voiceSelect').value;
+  if (!name) { showToast('⚠️ Nenhuma voz selecionada.'); return; }
+  localStorage.setItem('ff_voice_name', name);
+  pickPreferredVoice();
+  showToast('✅ Voz salva!');
+  closeSheet();
 }
 if ('speechSynthesis' in window) {
   pickPreferredVoice();
@@ -2277,6 +2347,24 @@ function handleVoiceDescReply(transcript) {
   applyVoiceIntent(intent);
 }
 
+const VOICE_STOPWORDS = new Set([
+  'adiciona', 'adicionar', 'registra', 'registrar', 'lanca', 'lancar', 'gastei', 'paguei', 'recebi', 'ganhei', 'comprei',
+  'um', 'uma', 'o', 'a', 'os', 'as', 'de', 'do', 'da', 'dos', 'das', 'com', 'para', 'pro', 'pra', 'no', 'na', 'em', 'r',
+  'dia', 'hoje', 'ontem', 'amanha', 'entrada', 'saida', 'reais', 'real',
+  'janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+]);
+
+function stripVoiceStopwords(rawText) {
+  const words = rawText.split(/\s+/);
+  const kept = words.filter((w) => {
+    const clean = w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\p{L}\p{N}]/gu, '');
+    if (!clean) return false;
+    if (/^\d+$/.test(clean)) return false;
+    return !VOICE_STOPWORDS.has(clean);
+  });
+  return kept.join(' ').trim();
+}
+
 /* Parses a natural-language pt-BR voice command into a structured intent */
 function parseVoiceCommand(rawText) {
   const text = rawText.toLowerCase();
@@ -2306,11 +2394,7 @@ function parseVoiceCommand(rawText) {
   let desc = '';
   let needsDesc = false;
   if (target === 'geral') {
-    desc = rawText
-      .replace(/\b(adiciona|adicionar|registra|registrar|lan[çc]a|lançar|gastei|paguei|recebi|ganhei|comprei|uma?|o|a|os|as|de|com|do|da|dos|das|para|pro|pra|no|na|dia|hoje|ontem|amanh[ãa]|entrada|sa[ií]da|reais?|r\$)\b/gi, ' ')
-      .replace(/\d+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    desc = stripVoiceStopwords(rawText);
     if (!desc || desc.length < 3) { desc = ''; needsDesc = true; }
   }
 
