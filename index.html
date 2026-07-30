@@ -872,11 +872,14 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
     <button class="action-item" onclick="triggerRestore()">📤 Restaurar Backup</button>
     <button class="action-item" id="darkModeItem" onclick="toggleDark()">◐ Ativar Modo Escuro</button>
   </div>
+  <div style="text-align:center;color:var(--muted);font-size:11px;padding:10px 0 6px" id="appVersionLabel">v—</div>
   <button class="action-item cancel" onclick="closeSheet()">Cancelar</button>
 </div>
 <input type="file" id="restoreFileInput" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
 
 <script>
+const APP_VERSION = 'v17';
+
 const CATS = {
   investimentos:{label:'Investimentos',icon:'💼',color:'#007aff',bg:'#e8f1ff',text:'#0056b3'},
   estudos:{label:'Estudos',icon:'📚',color:'#af52de',bg:'#f5e9fc',text:'#7d2fa3'},
@@ -2406,6 +2409,7 @@ document.getElementById('btgDate').value = getToday();
 document.getElementById('btgCashDate').value = getToday();
 document.getElementById('nomadCashDate').value = getToday();
 switchTab(activeTab);
+document.getElementById('appVersionLabel').textContent = APP_VERSION;
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
