@@ -2304,11 +2304,11 @@ function parseVoiceCommand(rawText) {
   let needsDesc = false;
   if (target === 'geral') {
     desc = rawText
-      .replace(/\b(adiciona|adicionar|registra|registrar|lan[çc]a|lançar|gastei|paguei|recebi|ganhei|comprei|uma?|de|com|do|da|dos|das|para|pro|pra|no|na|dia|hoje|ontem|amanh[ãa]|entrada|sa[ií]da|reais?|r\$)\b/gi, ' ')
+      .replace(/\b(adiciona|adicionar|registra|registrar|lan[çc]a|lançar|gastei|paguei|recebi|ganhei|comprei|uma?|o|a|os|as|de|com|do|da|dos|das|para|pro|pra|no|na|dia|hoje|ontem|amanh[ãa]|entrada|sa[ií]da|reais?|r\$)\b/gi, ' ')
       .replace(/\d+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    if (!desc) { desc = ''; needsDesc = true; }
+    if (!desc || desc.length < 3) { desc = ''; needsDesc = true; }
   }
 
   return { target, type, amount, date, desc, needsDesc };
