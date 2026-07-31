@@ -895,7 +895,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 <input type="file" id="restoreFileInput" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
 
 <script>
-const APP_VERSION = 'v18';
+const APP_VERSION = 'v19';
 
 const CATS = {
   investimentos:{label:'Investimentos',icon:'💼',color:'#007aff',bg:'#e8f1ff',text:'#0056b3'},
@@ -2255,7 +2255,11 @@ function beginListening() {
   };
   voiceRecognition.onerror = (e) => {
     if (voiceStep === 'awaiting_desc') {
-      handleVoiceDescReply('');
+      handleVoiceDescStep('');
+      return;
+    }
+    if (voiceStep === 'awaiting_category') {
+      handleVoiceCategoryStep('');
       return;
     }
     if (e.error === 'no-speech') {
@@ -2291,7 +2295,11 @@ function stopVoiceInput() {
 function handleVoiceTranscript(transcript) {
   stopListeningUI();
   if (voiceStep === 'awaiting_desc') {
-    handleVoiceDescReply(transcript);
+    handleVoiceDescStep(transcript);
+    return;
+  }
+  if (voiceStep === 'awaiting_category') {
+    handleVoiceCategoryStep(transcript);
     return;
   }
   const intent = parseVoiceCommand(transcript);
@@ -2304,8 +2312,8 @@ function handleVoiceTranscript(transcript) {
     voiceContext = intent;
     voiceStep = 'awaiting_desc';
     document.getElementById('voiceStatus').textContent = 'Ouvindo a descrição...';
-    document.getElementById('voiceTranscript').textContent = 'Ex: "Aluguel, categoria contas"';
-    speak('Qual é a descrição e a categoria dessa entrada?', () => beginListening());
+    document.getElementById('voiceTranscript').textContent = 'Ex: "Aluguel"';
+    speak('Qual é a descrição dessa entrada?', () => beginListening());
     return;
   }
   closeSheet();
@@ -2322,7 +2330,25 @@ const VOICE_CATEGORY_KEYWORDS = [
   { key: 'contas', re: /contas?\b|alugu?el|\bluz\b|[aá]gua|internet/ }
 ];
 
-function handleVoiceDescReply(transcript) {
+function cleanSimpleVoiceReply(transcript) {
+  return (transcript || '')
+    .replace(/^\s*(é|eh|tipo|assim)\s+/i, '')
+    .replace(/[.,;!?]+$/g, '')
+    .trim();
+}
+
+function handleVoiceDescStep(transcript) {
+  stopListeningUI();
+  if (!voiceContext) { voiceStep = 'initial'; return; }
+  const desc = cleanSimpleVoiceReply(transcript) || 'Lançamento por voz';
+  voiceContext.desc = desc;
+  voiceStep = 'awaiting_category';
+  document.getElementById('voiceStatus').textContent = 'Ouvindo a categoria...';
+  document.getElementById('voiceTranscript').textContent = 'Ex: "Alimentação"';
+  speak('E qual é a categoria? Por exemplo: investimentos, estudos, lazer, alimentação, contas, salário ou outros.', () => beginListening());
+}
+
+function handleVoiceCategoryStep(transcript) {
   stopListeningUI();
   voiceStep = 'initial';
   const intent = voiceContext;
@@ -2334,14 +2360,6 @@ function handleVoiceDescReply(transcript) {
   for (const c of VOICE_CATEGORY_KEYWORDS) {
     if (c.re.test(norm)) { category = c.key; break; }
   }
-  let cleaned = (transcript || '')
-    .replace(/\bcategoria\s+[^\s,]+/gi, ' ')
-    .replace(/\b(categoria|é|eh)\b/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (!cleaned) cleaned = 'Lançamento por voz';
-
-  intent.desc = cleaned;
   intent.category = category;
   closeSheet();
   applyVoiceIntent(intent);
@@ -2449,7 +2467,8 @@ function applyVoiceIntent(intent) {
     document.getElementById('date').value = dateStr;
     if (intent.category) document.getElementById('category').value = intent.category;
     onDateChange();
-    spoken = 'Entendi: ' + (intent.type === 'income' ? 'entrada' : 'saída') + ' de ' + fmtBRL(intent.amount) + ', ' + intent.desc + ', dia ' + dateLabel + '. Confira e toque em adicionar.';
+    const catLabel = intent.category && CATS[intent.category] ? CATS[intent.category].label : null;
+    spoken = 'Entendi: ' + (intent.type === 'income' ? 'entrada' : 'saída') + ' de ' + fmtBRL(intent.amount) + ', dia ' + dateLabel + '. Descrição: ' + intent.desc + (catLabel ? '. Categoria: ' + catLabel : '') + '. Confira e toque em adicionar.';
   } else if (intent.target === 'btg') {
     openSheet('btg');
     setBtgType(intent.type);
