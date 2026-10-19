@@ -1007,7 +1007,7 @@ input:focus,select:focus{border-color:var(--blue);background:var(--surface)}
 <input type="file" id="restoreFileInput" accept="application/json,.json" style="display:none" onchange="handleRestoreFile(event)">
 
 <script>
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v21';
 
 const CATS = {
   investimentos:{label:'Investimentos',icon:'💼',color:'#007aff',bg:'#e8f1ff',text:'#0056b3'},
@@ -1235,7 +1235,7 @@ function addTransaction() {
   if (n > 1) {
     const parts = splitInstallments(amount, n, instBasis);
     createPlan({ kind: 'installment', desc, type: currentType, category, pay, start: date, count: n, amounts: parts });
-    msg = '✅ ' + n + 'x de ' + fmtBRL(parts[0]) + ' lançadas nos próximos meses!';
+    msg = '✅ ' + n + 'x de ' + fmtBRL(parts[0]) + ' lançadas. Marque cada uma como paga.';
   } else if (repeatOn) {
     const months = parseInt(document.getElementById('repeatMonths').value) || 0;
     createPlan({ kind: 'monthly', desc, type: currentType, category, pay, start: date, count: months, amounts: [amount] });
@@ -1263,7 +1263,6 @@ function createPlan(o) {
     start: o.start, count: o.count || 0, amounts: o.amounts, skip: [], ended: false };
   plans.push(plan);
   materializePlan(plan);
-  settleDue();
   savePlans();
 }
 
@@ -1284,7 +1283,7 @@ function materializePlan(plan) {
     if (!plan.count && date > horizon) break;
     if (have.has(i) || skip.has(i)) continue;
     const tx = { id: newId(), desc: plan.desc, amount: planAmount(plan, i), type: plan.type, category: plan.category,
-      date, paid: date <= getToday(), plan: plan.id, n: i };
+      date, paid: false, plan: plan.id, n: i };
     if (plan.pay) tx.pay = plan.pay;
     transactions.push(tx);
     added = true;
@@ -1292,21 +1291,20 @@ function materializePlan(plan) {
   return added;
 }
 
-/* Cobranças de parcelas e mensalidades são automáticas: no dia do vencimento viram "pagas" */
-function settleDue() {
-  const today = getToday();
-  let changed = false;
-  transactions.forEach(t => {
-    if (t.plan && t.paid === false && t.date <= today) { t.paid = true; changed = true; }
-  });
-  return changed;
-}
-
 function refreshPlans() {
   let changed = false;
   plans.forEach(p => { if (materializePlan(p)) changed = true; });
-  if (settleDue()) changed = true;
   if (changed) { save(); savePlans(); }
+}
+
+/* Paga a próxima parcela/mensalidade em aberto de um plano (saldo e meses ajustam na hora) */
+function payNext(planId) {
+  const next = transactions.filter(t => t.plan === planId && t.paid === false).sort((a, b) => a.n - b.n)[0];
+  if (!next) return;
+  next.paid = true;
+  save();
+  showToast('✅ ' + next.desc + ' (' + planLabel(next) + ') paga!');
+  renderAll();
 }
 
 function endPlan(id) {
@@ -1588,7 +1586,7 @@ function renderMonth() {
   const result = income - expense;
   document.getElementById('monthStats').innerHTML =
     `<div class="month-stat"><div class="ms-label">Entradas</div><div class="ms-value" style="color:var(--green)">${fmtBRL(income)}</div></div>` +
-    `<div class="month-stat"><div class="ms-label">Saídas</div><div class="ms-value" style="color:var(--red)">${fmtBRL(expense)}</div><div class="ms-sub">${toPay > 0 ? fmtBRL(toPay) + ' a vencer' : 'tudo pago'}</div></div>` +
+    `<div class="month-stat"><div class="ms-label">Saídas</div><div class="ms-value" style="color:var(--red)">${fmtBRL(expense)}</div><div class="ms-sub">${toPay > 0 ? fmtBRL(toPay) + ' a pagar' : 'tudo pago'}</div></div>` +
     `<div class="month-stat"><div class="ms-label">Resultado</div><div class="ms-value" style="color:${result >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtBRL(result)}</div></div>`;
 
   const spent = {};
@@ -1696,6 +1694,7 @@ function renderPlans() {
         <div class="tx-meta">${meta}</div>
       </div>
       <div class="pos-value" style="color:${p.type === 'income' ? 'var(--green)' : 'var(--text)'}">${sign}${side}<div class="pos-detail">${sub}</div></div>
+      <button class="mark-paid-btn" onclick="payNext(${p.id})">✓ Pagar</button>
       <button class="row-delete" onclick="endPlan(${p.id})" aria-label="Encerrar">×</button>
     </div>`;
   }).join('');
