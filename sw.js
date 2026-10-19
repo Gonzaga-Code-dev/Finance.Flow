@@ -1,8 +1,14 @@
-const CACHE = 'financeflow-v2';
+const CACHE = 'financeflow-v20';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CDN_ASSETS = ['https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE).then(async (c) => {
+      await c.addAll(ASSETS);
+      await Promise.all(CDN_ASSETS.map((url) => c.add(url).catch(() => {})));
+    })
+  );
   self.skipWaiting();
 });
 
@@ -15,13 +21,31 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const sameOrigin = new URL(e.request.url).origin === self.location.origin;
+  if (sameOrigin) {
+    // Arquivos do app: rede primeiro, para a versão nova aparecer logo; cache só offline.
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  // Bibliotecas externas (Chart.js): cache primeiro.
   e.respondWith(
-    fetch(e.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy));
-        return res;
-      })
-      .catch(() => caches.match(e.request))
+    caches.match(e.request).then((cached) => {
+      const fetchPromise = fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+          return res;
+        })
+        .catch(() => cached);
+      return cached || fetchPromise;
+    })
   );
 });
